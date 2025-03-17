@@ -1,0 +1,83 @@
+.footer {
+    background-color: #fff; /* Nền trắng */
+    padding-top: 70px;
+    padding-bottom: 30px;
+    box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ */
+    transition: all 0.3s ease-in-out;
+}
+
+/* Logo */
+.footer .logo img {
+    width: 50%;
+    margin-bottom: 1rem;
+}
+
+.footer .logo p {
+    color: var(--text-color);
+}
+
+/* Social Links */
+.social_links {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.social_links span a {
+    text-decoration: none;
+    color: var(--heading-color);
+    font-size: 1.5rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+/* Hiệu ứng khi hover vào các icon mạng xã hội */
+.social_links span a:hover {
+    color: var(--secondary-color);
+    transform: scale(1.2);
+}
+
+/* Tiêu đề danh mục */
+.footer__link-title {
+    color: var(--heading-color);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Danh sách liên kết */
+.footer__quick-links li {
+    list-style: none;
+    margin-bottom: 10px;
+    transition: transform 0.2s ease;
+}
+
+.footer__quick-links li:hover {
+    transform: translateX(5px);
+}
+
+.footer__quick-links li a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    transition: color 0.3s ease-in-out;
+}
+
+/* Hiệu ứng khi hover vào liên kết */
+.footer__quick-links li a:hover {
+    color: var(--secondary-color);
+}
+
+/* Các biểu tượng nhỏ */
+.footer__quick-links h6 span i {
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+}
+
+/* Copyright */
+.copyright {
+    color: var(--text-color);
+    font-size: 1rem;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: center;
+}

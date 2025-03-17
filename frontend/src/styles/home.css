@@ -1,0 +1,245 @@
+/* ======================== */
+/* HERO SECTION (Tiêu đề & Nội dung) */
+/* ======================== */
+.hero__content {
+    padding-top: 50px;
+    text-align: left;
+}
+
+/* Phụ đề */
+.hero__subtitle {
+    display: flex;
+    align-items: center;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.hero__subtitle img {
+    width: 35px;
+    height: 35px;
+    margin-left: 8px;
+}
+
+/* Tiêu đề chính */
+.hero__content h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-color);
+    margin-top: 15px;
+}
+
+.hero__content .highlight {
+    color: var(--primary-color);
+}
+
+/* Đoạn mô tả */
+.hero__content p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-color);
+    margin-top: 15px;
+}
+
+/* ======================== */
+/* HERO IMAGE CONTAINER */
+/* ======================== */
+.hero_img-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.hero_img-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    flex: 1;
+}
+
+/* Ảnh & Video */
+.hero_img-box img, .hero_img-box video {
+    width: 100%;
+    height: 350px;
+    max-width: 280px;
+    border-radius: 15px;
+    border: 1px solid var(--secondary-color);
+    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15);
+    display: block;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    object-fit: cover;
+}
+
+/* Hover */
+.hero_img-box img:hover, .hero_img-box video:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* ======================== */
+/* SERVICE SECTION (Dịch vụ) */
+/* ======================== */
+.services__subtitle {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.services__title {
+    font-size: 2.3rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 30px;
+    text-transform: uppercase;
+}
+
+/* ======================== */
+/* FEATURED TOUR SECTION (Tour nổi bật) */
+/* ======================== */
+.featured_tour-title {
+    font-size: 2.3rem;
+    font-weight: bold;
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* ======================== */
+/* EXPERIENCE SECTION (Kinh nghiệm) */
+/* ======================== */
+.experience_content {
+    text-align: left;
+}
+
+.experience_content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 20px;
+}
+
+.experience_content p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+/* Bộ đếm kinh nghiệm */
+.counter_wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.counter_box {
+    background: var(--secondary-color);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+/* Hover */
+.counter_box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Số liệu */
+.counter_box span {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.counter_box h6 {
+    font-size: 1rem;
+    color: #fff;
+    margin-top: 5px;
+}
+
+/* Ảnh kinh nghiệm */
+.experience__img img {
+    width: 100%;
+    max-width: 500px;
+    border-radius: 15px;
+    border: 1px solid var(--secondary-color);
+    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* ======================== */
+/* GALLERY SECTION */
+/* ======================== */
+.gallery__title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+/* Hiệu ứng ảnh */
+.masonry__img {
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.masonry__img:hover {
+    transform: scale(1.1);
+    opacity: 0.9;
+}
+
+/* ======================== */
+/* TESTIMONIAL SECTION */
+/* ======================== */
+.testimonial_title {
+    font-size: 2.3rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* ======================== */
+/* RESPONSIVE */
+/* ======================== */
+@media (max-width: 992px) {
+    .hero__content {
+        padding: 30px;
+        max-width: 100%;
+    }
+
+    .hero__content h1 {
+        font-size: 2.5rem;
+        line-height: 3rem;
+    }
+
+    .hero__content p {
+        font-size: 1rem;
+        line-height: 1.6rem;
+    }
+
+    /* Điều chỉnh ảnh trên mobile */
+    .hero_img-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero_img-box img, .hero_img-box video {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Điều chỉnh phần kinh nghiệm trên mobile */
+    .counter_wrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .experience_content h2 {
+        font-size: 2rem;
+    }
+}
+ 

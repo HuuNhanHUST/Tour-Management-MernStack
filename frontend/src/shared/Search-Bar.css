@@ -1,0 +1,132 @@
+.search_bar {
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
+    width: max-content;
+    margin-top: 50px;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    transition: all 0.3s ease-in-out;
+}
+
+.search_bar:hover {
+    box-shadow: rgba(17, 12, 46, 0.25) 0px 55px 120px 0px;
+    transform: scale(1.02);
+}
+
+.form_group {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid #ccc;
+    flex-grow: 1;
+    justify-content: flex-start;
+    gap: 6px;
+    height: 50px;
+}
+
+.form_group:hover {
+    background: #eceff1;
+    transform: scale(1.02);
+}
+
+.form_group span {
+    font-size: 1.6rem;
+    color: #ee6e6e;
+}
+
+.form_group input {
+    border: none;
+    font-size: 1rem;
+    color: var(--heading-color);
+    background: transparent;
+    padding: 4px 8px;
+    width: 100%;
+    font-weight: 500;
+    height: 100%;
+    transition: all 0.3s ease-in-out;
+}
+
+.form_group input:focus {
+    outline: none;
+    border-bottom: 2px solid var(--primary-color);
+    background: #fff;
+    transform: scale(1.02);
+}
+
+.form_group h6 {
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.form_group-fast {
+    border-right: 2px solid #bbb;
+    padding-right: 8px;
+}
+
+.search_icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.search_icon:hover {
+    background: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+.search_icon i {
+    font-size: 1.4rem;
+    color: #fff;
+    transition: color 0.3s ease-in-out;
+}
+
+.search_icon:hover i {
+    color: #000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .search_bar {
+        width: 100%;
+        padding: 0.6rem;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .form_group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        padding: 6px;
+        height: auto;
+    }
+    
+    .form_group input {
+        width: 100%;
+        font-size: 0.9rem;
+    }
+    .form_group h6 {
+        font-size: 0.85rem;
+    }
+    .search_icon {
+        width: 45px;
+        height: 45px;
+    }
+    .search_icon i {
+        font-size: 1.2rem;
+    }
+}
