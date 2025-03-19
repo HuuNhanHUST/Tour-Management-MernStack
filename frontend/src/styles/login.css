@@ -1,0 +1,114 @@
+.login__img {
+    width: 60%;
+    text-align: center;
+}
+
+.login__img img {
+    width: 70%;
+    object-fit: contain;
+}
+
+.login__form {
+    padding: 50px;
+    background: var(--secondary-color);
+    position: relative;
+    border-radius: 10px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    transition: transform 0.3s ease-in-out;
+}
+
+.login__form:hover {
+    transform: scale(1.02);
+}
+
+.login__container {
+    box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;
+    margin-top: 100px;
+}
+
+/* Giảm kích thước icon user và căn chỉnh */
+.login__form .user {
+    width: 60px;  /* Giảm kích thước */
+    height: 60px;
+    position: absolute;
+    top: -15%;
+    left: 50%;
+    transform: translate(-50%, 0);
+    background: var(--heading-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 10px;
+    transition: all 0.3s ease-in-out;
+}
+
+.login__form .user img {
+    width: 80%;
+    height: auto;
+}
+
+.login__form h2 {
+    color: #fff;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login__form {
+    width: 40%;
+}
+
+/* Thêm hiệu ứng focus */
+.login__form input {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: none;
+    font-size: 1rem;
+    color: var(--heading-color);
+    transition: all 0.3s ease-in-out;
+}
+
+.login__form input:focus {
+    outline: none;
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
+    transform: scale(1.02);
+}
+
+/* Nút đăng nhập có hiệu ứng hover */
+.auth__btn {
+    background: var(--heading-color) !important;
+    width: 100%;
+    color: #fff !important;
+    padding: 0.7rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.auth__btn:hover {
+    background: #fff !important;
+    color: var(--heading-color) !important;
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
+}
+
+.login__form p {
+    font-size: 0.9rem;
+    color: #fff;
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.login__form p a {
+    color: var(--heading-color);
+    text-decoration: none;
+    margin-left: 5px;
+    font-weight: 500;
+    transition: color 0.3s ease-in-out;
+}
+
+.login__form p a:hover {
+    color: #fff;
+    text-decoration: underline;
+}

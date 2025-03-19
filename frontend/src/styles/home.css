@@ -110,15 +110,19 @@
 /* ======================== */
 /* EXPERIENCE SECTION (Kinh nghiệm) */
 /* ======================== */
-.experience_content {
-    text-align: left;
+.experience_content h5 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
 }
 
 .experience_content h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
+    font-size: 2.3rem;
+    font-weight: bold;
     color: var(--text-color);
     margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
 .experience_content p {
@@ -176,8 +180,10 @@
 /* GALLERY SECTION */
 /* ======================== */
 .gallery__title {
-    font-size: 2.5rem;
+    font-size: 2.3rem;
     font-weight: bold;
+    text-transform: uppercase;
+    color: var(--text-color);
     text-align: center;
     margin: 2rem 0;
 }
@@ -198,6 +204,8 @@
 .testimonial_title {
     font-size: 2.3rem;
     font-weight: bold;
+    text-transform: uppercase;
+    color: var(--text-color);
     text-align: center;
     margin-top: 1rem;
 }
@@ -242,4 +250,3 @@
         font-size: 2rem;
     }
 }
- 

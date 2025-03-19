@@ -1,28 +1,35 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Container, Row, Button } from "reactstrap";
 import { NavLink, Link } from "react-router-dom";
 
 import logo from "../../assets/images/logo.png";
-import './header.css'
+import "./header.css";
 
 const nav_links = [
-  {
-    path: "/home",
-    display: "Home",
-  },
-  {
-    path: "/about",
-    display: "About",
-  },
-  {
-    path: "/tours",
-    display: "Tours",
-  },
+  { path: "/home", display: "Home" },
+  { path: "/about", display: "About" },
+  { path: "/tour", display: "Tours" },
 ];
 
 const Header = () => {
+  const headerRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 80) {
+        headerRef.current.classList.add("sticky__header");
+      } else {
+        headerRef.current.classList.remove("sticky__header");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="header">
+    <header className="header" ref={headerRef}>
       <Container>
         <Row>
           <div className="nav__wrapper d-flex align-items-center justify-content-between">
@@ -30,21 +37,23 @@ const Header = () => {
             <div className="logo">
               <img src={logo} alt="Logo" />
             </div>
-            {/* ---------- Logo end ---------- */}
 
-            {/* ---------- Menu start ---------- */}
-            <div className="navigation">
-              <ul className="menu d-flex align-items-center gap-5">
+            {/* ---------- Menu ---------- */}
+            <div className={`navigation menu ${menuOpen ? "open" : ""}`}>
+              <ul className="d-flex align-items-center gap-5">
                 {nav_links.map((item, index) => (
                   <li className="nav__item" key={index}>
-                    <NavLink to={item.path} className={({ isActive }) => isActive ? 'active__link' : ""}>
+                    <NavLink
+                      to={item.path}
+                      className={({ isActive }) => (isActive ? "active_link" : "")}
+                      onClick={() => setMenuOpen(false)} // Đóng menu khi chọn link
+                    >
                       {item.display}
                     </NavLink>
                   </li>
                 ))}
               </ul>
             </div>
-            {/* ---------- Menu end ---------- */}
 
             {/* ---------- Right Section ---------- */}
             <div className="nav_right d-flex align-items-center gap-4">
@@ -56,10 +65,11 @@ const Header = () => {
                   <Link to="/register">Register</Link>
                 </Button>
               </div>
-              <span className="mobile_menu"></span>
-              <i className="ri-menu-line"></i>
+              {/* Mobile Menu Toggle Button */}
+              <span className="mobile__menu" onClick={() => setMenuOpen(!menuOpen)}>
+                <i className="ri-menu-line"></i>
+              </span>
             </div>
-            {/* ---------- Right Section end ---------- */}
           </div>
         </Row>
       </Container>

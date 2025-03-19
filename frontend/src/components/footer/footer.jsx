@@ -7,7 +7,7 @@ import logo from "../../assets/images/logo.png";
 const quickLinks = [
   { path: "/home", display: "Home" },
   { path: "/about", display: "About" },
-  { path: "/tours", display: "Tours" },
+  { path: "/tour", display: "Tours" },
 ];
 
 const quickLinks2 = [
