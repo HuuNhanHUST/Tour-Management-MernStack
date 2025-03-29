@@ -1,9 +1,11 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useContext } from "react";
 import { Container, Row, Button } from "reactstrap";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 
 import logo from "../../assets/images/logo.png";
 import "./header.css";
+
+import { AuthContext } from "../../context/AuthContext";
 
 const nav_links = [
   { path: "/home", display: "Home" },
@@ -14,6 +16,14 @@ const nav_links = [
 const Header = () => {
   const headerRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, dispatch } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch({ type: "LOGOUT" });
+    localStorage.removeItem("user");
+    navigate("/");
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,20 +43,22 @@ const Header = () => {
       <Container>
         <Row>
           <div className="nav__wrapper d-flex align-items-center justify-content-between">
-            {/* ---------- Logo ---------- */}
+            {/* Logo */}
             <div className="logo">
               <img src={logo} alt="Logo" />
             </div>
 
-            {/* ---------- Menu ---------- */}
+            {/* Menu */}
             <div className={`navigation menu ${menuOpen ? "open" : ""}`}>
               <ul className="d-flex align-items-center gap-5">
                 {nav_links.map((item, index) => (
                   <li className="nav__item" key={index}>
                     <NavLink
                       to={item.path}
-                      className={({ isActive }) => (isActive ? "active_link" : "")}
-                      onClick={() => setMenuOpen(false)} // Đóng menu khi chọn link
+                      className={({ isActive }) =>
+                        isActive ? "active_link" : ""
+                      }
+                      onClick={() => setMenuOpen(false)}
                     >
                       {item.display}
                     </NavLink>
@@ -55,18 +67,33 @@ const Header = () => {
               </ul>
             </div>
 
-            {/* ---------- Right Section ---------- */}
+            {/* Right side: login/register or user/logout */}
             <div className="nav_right d-flex align-items-center gap-4">
               <div className="nav_btns d-flex align-items-center gap-4">
-                <Button className="btn secondary__btn">
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button className="btn primary__btn">
-                  <Link to="/register">Register</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <h5 className="mb-0">{user.username}</h5>
+                    <Button className="btn secondary__btn" onClick={handleLogout}>
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button className="btn secondary__btn">
+                      <Link to="/login">Login</Link>
+                    </Button>
+                    <Button className="btn primary__btn">
+                      <Link to="/register">Register</Link>
+                    </Button>
+                  </>
+                )}
               </div>
-              {/* Mobile Menu Toggle Button */}
-              <span className="mobile__menu" onClick={() => setMenuOpen(!menuOpen)}>
+
+              {/* Mobile menu button */}
+              <span
+                className="mobile__menu"
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
                 <i className="ri-menu-line"></i>
               </span>
             </div>

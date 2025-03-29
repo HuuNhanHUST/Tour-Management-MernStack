@@ -2,7 +2,7 @@
   {
     "title": "Westminister Bridge",
     "city": "London",
-    "address": "Somewhere in London",
+    "address": "Cầu Westminster, London, Anh",
     "distance": 300,
     "price": 99,
     "maxGroupSize": 10,
@@ -15,11 +15,11 @@
   {
     "title": "Bali, Indonesia",
     "city": "Bali",
-    "address": "Somewhere in Indonesia",
+    "address": "Đảo Bali, Indonesia",
     "distance": 400,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Khám phá vẻ đẹp thiên nhiên tuyệt vời của đảo Bali với những bãi biển xanh mát và văn hóa độc đáo.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img02.jpg",
@@ -28,11 +28,11 @@
   {
     "title": "Snowy Mountains, Thailand",
     "city": "Bangkok",
-    "address": "Somewhere in Thailand",
+    "address": "Dãy núi phía Bắc Thái Lan (gần Chiang Mai, không phải Bangkok)",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Trải nghiệm vẻ đẹp hiếm có của những ngọn núi phủ tuyết tại miền Bắc Thái Lan, một điểm đến độc đáo.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img03.jpg",
@@ -41,11 +41,11 @@
   {
     "title": "Beautiful Sunrise, Thailand",
     "city": "Phuket",
-    "address": "Somewhere in Thailand",
+    "address": "Bãi biển Patong, Phuket, Thái Lan",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Ngắm bình minh tuyệt đẹp trên bãi biển Phuket, tận hưởng không khí yên bình và làn nước trong xanh.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img04.jpg",
@@ -54,11 +54,11 @@
   {
     "title": "Nusa Pendia Bali, Indonesia",
     "city": "Bali",
-    "address": "Somewhere in Indonesia",
+    "address": "Đảo Nusa Penida, Bali, Indonesia",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Khám phá Nusa Penida với những vách đá hùng vĩ, bãi biển hoang sơ và làn nước trong veo.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img05.jpg",
@@ -67,11 +67,11 @@
   {
     "title": "Cherry Blossoms Spring",
     "city": "Tokyo",
-    "address": "Somewhere in Japan",
+    "address": "Công viên Ueno, Tokyo, Nhật Bản",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Thưởng thức vẻ đẹp của hoa anh đào nở rộ vào mùa xuân tại Tokyo, một trải nghiệm không thể bỏ lỡ.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img06.jpg",
@@ -80,24 +80,24 @@
   {
     "title": "Holmen Lofoten, France",
     "city": "Paris",
-    "address": "Somewhere in France",
+    "address": "Quần đảo Lofoten, Na Uy (không phải Paris, Pháp)",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Khám phá vẻ đẹp hoang sơ của quần đảo Lofoten với những ngôi làng đánh cá và phong cảnh núi non tuyệt đẹp.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img07.jpg",
     "featured": true
   },
   {
-    "title": "Snowy Mountains, Thailand",
+    "title": "Beautiful Snowy Mountains",
     "city": "Bangkok",
-    "address": "Somewhere in Thailand",
+    "address": "Dãy núi Doi Inthanon, Chiang Mai, Thái Lan (không phải Bangkok)",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Chiêm ngưỡng vẻ đẹp của những ngọn núi phủ sương và không khí mát mẻ tại Doi Inthanon.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img03.jpg",
@@ -106,11 +106,11 @@
   {
     "title": "Jaflong, Sylhet",
     "city": "Sylhet",
-    "address": "Somewhere in Sylhet",
+    "address": "Jaflong, Sylhet, Bangladesh",
     "distance": 100,
     "price": 99,
     "maxGroupSize": 5,
-    "desc": "this is the description",
+    "desc": "Tham quan Jaflong, nơi có dòng sông trong xanh, đồi núi và những cánh đồng trà tuyệt đẹp.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img08.jpg",
@@ -119,11 +119,11 @@
   {
     "title": "Cox's Bazar Sea Beach",
     "city": "Chittagong",
-    "address": "Somewhere in Chittagong",
+    "address": "Bãi biển Cox's Bazar, Chittagong, Bangladesh",
     "distance": 500,
     "price": 99,
     "maxGroupSize": 8,
-    "desc": "this is the description",
+    "desc": "Thư giãn tại Cox's Bazar, bãi biển dài nhất thế giới với cát vàng và sóng biển êm đềm.",
     "reviews": [],
 
     "photo": "/tour-images/tour-img09.jpg",

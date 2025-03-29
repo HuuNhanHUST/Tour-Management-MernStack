@@ -1,25 +1,54 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Container, Row, Col, Form, FormGroup, Button } from "reactstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 
 import registerImg from "../assets/images/register.png";
 import userIcon from "../assets/images/user.png";
+import { AuthContext } from "../context/AuthContext";
+import { BASE_URL } from "../utils/config";
 
 const Register = () => {
   const [credentials, setCredentials] = useState({
-    userName: "",
+    username: "",
     email: "",
     password: ""
   });
+
+  const [error, setError] = useState(null);
+  const { dispatch } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
-  const handleClick = (e) => {
+  const handleClick = async (e) => {
     e.preventDefault();
-    console.log("User Registered:", credentials);
+    setError(null);
+
+    try {
+      const res = await fetch(`${BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(credentials)
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        setError(result.message);
+        return;
+      }
+
+      dispatch({ type: "REGISTER_SUCCESS", payload: result.data });
+      alert("Đăng ký thành công!");
+      navigate("/login");
+    } catch (err) {
+      setError("Đã có lỗi xảy ra.");
+    }
   };
 
   return (
@@ -40,9 +69,9 @@ const Register = () => {
                   <FormGroup>
                     <input
                       type="text"
-                      placeholder="Username"
+                      placeholder="Tên đăng nhập"
                       required
-                      id="userName"
+                      id="username"
                       onChange={handleChange}
                     />
                   </FormGroup>
@@ -60,12 +89,15 @@ const Register = () => {
                   <FormGroup>
                     <input
                       type="password"
-                      placeholder="Password"
+                      placeholder="Mật khẩu"
                       required
                       id="password"
                       onChange={handleChange}
                     />
                   </FormGroup>
+
+                  {error && <p className="text-danger">{error}</p>}
+
                   <Button className="btn secondary_btn auth__btn" type="submit">
                     Tạo Tài Khoản
                   </Button>

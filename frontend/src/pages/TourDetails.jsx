@@ -1,35 +1,81 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import '../styles/tour-details.css';
 import { Container, Row, Col, Form, ListGroup } from 'reactstrap';
 import { useParams } from 'react-router-dom';
-import tourData from '../assets/data/tours';
 import caculateAvgRating from "../utils/avgRating";
 import avatar from '../assets/images/avatar.jpg';
 import Booking from "../components/Booking/Booking";
 import Newsletter from "../shared/Newsleter";
+import useFetch from "../hooks/useFetch";
+import { BASE_URL } from "../utils/config";
+import { AuthContext } from "../context/AuthContext";
 
 const TourDetails = () => {
   const { id } = useParams();
   const reviewMsgRef = useRef('');
   const [tourRating, setTourRating] = useState(null);
-  const tour = tourData.find(tour => tour.id === id);
+  const { user } = useContext(AuthContext);
 
-  const { photo, title, desc, price, address, reviews, city, distance, maxGroupSize } = tour;
-  const { totalRating, avgRating } = caculateAvgRating(reviews);
+  const { data: tour, loading, error } = useFetch(`${BASE_URL}/tour/${id}`);
+  const { totalRating, avgRating } = caculateAvgRating(tour?.reviews || []);
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
 
-  const submitHandler = e => {
+  const submitHandler = async (e) => {
     e.preventDefault();
+  
     const reviewText = reviewMsgRef.current.value;
-
-
-
-  // if (tourRating !== null) {
-   //   alert(`Review: ${reviewText}, Rating: ${tourRating}`);
-   // } else {
-   //   alert('Please select a rating!');
-   // }
+  
+    if (!user) {
+      alert('Vui lòng đăng nhập để đánh giá!');
+      return;
+    }
+  
+    if (!tourRating) {
+      alert('Vui lòng chọn số sao!');
+      return;
+    }
+  
+    const reviewObj = {
+      username: user?.username ,
+      reviewText,
+      rating: tourRating
+    };
+  
+    try {
+      const res = await fetch(`${BASE_URL}/review/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // Quan trọng nếu server dùng cookie JWT
+        body: JSON.stringify(reviewObj)
+      });
+  
+      const result = await res.json();
+  
+      if (!res.ok) {
+        console.error("❌ Server response:", result);
+        alert(result.message || "Gửi đánh giá thất bại!");
+        return;
+      }
+  
+      alert("✅ Gửi đánh giá thành công!");
+      window.location.reload();
+  
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
+      alert("Đã có lỗi xảy ra khi gửi đánh giá.");
+    }
   };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  if (loading) return <h4 className="text-center pt-5">Đang tải dữ liệu...</h4>;
+  if (error || !tour) return <h4 className="text-center pt-5">Không tìm thấy tour</h4>;
+
+  const { photo, title, desc, price, address, reviews, city, distance, maxGroupSize } = tour;
 
   return (
     <>
@@ -38,55 +84,50 @@ const TourDetails = () => {
           <Row>
             <Col lg="8">
               <div className="tour__content">
-                <img src={photo} alt="" />
+                <img src={photo} alt={title} />
                 <div className="tour__info">
                   <h2>{title}</h2>
 
-                  <div className="d-flex align-items-center gap-5 ">
+                  <div className="d-flex align-items-center gap-5">
                     <span className="tour__rating d-flex align-items-center gap-1">
                       <i className="ri-star-line" style={{ color: "var(--secondary-color)" }}></i>
-                      {avgRating === 0 ? 'Chưa có đánh giá nào' : <span>{avgRating}</span>}
+                      {avgRating === 0 ? 'Chưa có đánh giá' : <span>{avgRating}</span>}
                       {totalRating !== 0 && <span>({reviews?.length})</span>}
                     </span>
-                    <span>
-                      <i className="ri-map-pin-user-fill"></i>{address}
-                    </span>
+                    <span><i className="ri-map-pin-user-fill"></i>{address}</span>
                   </div>
 
                   <div className="tour__extra-details">
-                    <span>
-                      <i className="ri-map-pin-2-line"></i>{city}
-                    </span>
-                    <span>
-                      <i className="ri-money-dollar-circle-line"></i>${price}/mỗi người
-                    </span>
-                    <span>
-                      <i className="ri-map-pin-time-line"></i>{distance} k/m
-                    </span>
-                    <span>
-                      <i className="ri-group-line"></i>{maxGroupSize} Người
-                    </span>
+                    <span><i className="ri-map-pin-2-line"></i>{city}</span>
+                    <span><i className="ri-money-dollar-circle-line"></i>${price}/người</span>
+                    <span><i className="ri-map-pin-time-line"></i>{distance} km</span>
+                    <span><i className="ri-group-line"></i>{maxGroupSize} người</span>
                   </div>
+
                   <h5>Mô tả</h5>
                   <p>{desc}</p>
                 </div>
 
                 <div className="tour__reviews mt-4">
-                  <h4>Reviews ({reviews?.length} reviews)</h4>
+                  <h4>Đánh giá ({reviews?.length})</h4>
 
                   <Form onSubmit={submitHandler}>
                     <div className="d-flex align-items-center gap-3 mb-4 rating__group">
-                      <span onClick={() => setTourRating(1)}>1<i className="ri-star-s-fill"></i></span>
-                      <span onClick={() => setTourRating(2)}>2<i className="ri-star-s-fill"></i></span>
-                      <span onClick={() => setTourRating(3)}>3<i className="ri-star-s-fill"></i></span>
-                      <span onClick={() => setTourRating(4)}>4<i className="ri-star-s-fill"></i></span>
-                      <span onClick={() => setTourRating(5)}>5<i className="ri-star-s-fill"></i></span>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <span key={star} onClick={() => setTourRating(star)}>
+                          {star}<i className="ri-star-s-fill"></i>
+                        </span>
+                      ))}
                     </div>
                     <div className="review__input">
-                      <input type="text" ref={reviewMsgRef} placeholder="Chia Sẽ Suy Nghĩ Nhé !" required />
-
+                      <input
+                        type="text"
+                        ref={reviewMsgRef}
+                        placeholder="Chia sẻ cảm nhận của bạn..."
+                        required
+                      />
                       <button className="btn primary__btn text-white" type="submit">
-                        submit
+                        Gửi đánh giá
                       </button>
                     </div>
                   </Form>
@@ -94,20 +135,18 @@ const TourDetails = () => {
                   <ListGroup className="user__reviews">
                     {reviews?.map((review, index) => (
                       <div key={index} className="review__item">
-                        <img src={avatar} alt="" />
-
+                        <img src={avatar} alt="avatar" />
                         <div className="w-100">
                           <div className="d-flex align-items-center justify-content-between">
                             <div>
-                              <h5>Phuong Nghi</h5>
-                              <p>{new Date('03-18-2025').toLocaleDateString('en-US', options)}</p>
+                              <h5>{review.username || 'Người dùng'}</h5>
+                              <p>{new Date(review.createdAt).toLocaleDateString('vi-VN', options)}</p>
                             </div>
+                            <span className="review__rating">
+                              {review.rating} <i className="ri-star-s-fill"></i>
+                            </span>
                           </div>
-                          <h6>Amazing Tour</h6>
-                        </div>
-
-                        <div className="review__rating">
-                          5 <i className="ri-star-s-fill"></i>
+                          <h6>{review.reviewText}</h6>
                         </div>
                       </div>
                     ))}
@@ -115,13 +154,15 @@ const TourDetails = () => {
                 </div>
               </div>
             </Col>
-            <Col lg='4'>
-            <Booking tour ={tour} avgRating ={avgRating}/>
+
+            <Col lg="4">
+              <Booking tour={tour} avgRating={avgRating} />
             </Col>
           </Row>
         </Container>
       </section>
-      <Newsletter/>
+
+      <Newsletter />
     </>
   );
 };
