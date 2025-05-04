@@ -14,54 +14,66 @@ const TourDetails = () => {
   const { id } = useParams();
   const reviewMsgRef = useRef('');
   const [tourRating, setTourRating] = useState(null);
+  const [userReview, setUserReview] = useState(null);
   const { user } = useContext(AuthContext);
 
   const { data: tour, loading, error } = useFetch(`${BASE_URL}/tour/${id}`);
   const { totalRating, avgRating } = caculateAvgRating(tour?.reviews || []);
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
 
+  // Khi load tour xong → check user đã review chưa
+  useEffect(() => {
+    if (tour && user) {
+      const existing = tour.reviews?.find(r => r.username === user.username);
+      if (existing) {
+        setUserReview(existing);
+        reviewMsgRef.current.value = existing.reviewText; // Gán nội dung cũ
+        setTourRating(existing.rating);                   // Gán số sao cũ
+      }
+    }
+  }, [tour, user]);
+
   const submitHandler = async (e) => {
     e.preventDefault();
-  
+
     const reviewText = reviewMsgRef.current.value;
-  
+
     if (!user) {
       alert('Vui lòng đăng nhập để đánh giá!');
       return;
     }
-  
+
     if (!tourRating) {
       alert('Vui lòng chọn số sao!');
       return;
     }
-  
+
     const reviewObj = {
-      username: user?.username ,
       reviewText,
       rating: tourRating
     };
-  
+
     try {
       const res = await fetch(`${BASE_URL}/review/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        credentials: 'include', // Quan trọng nếu server dùng cookie JWT
+        credentials: 'include',
         body: JSON.stringify(reviewObj)
       });
-  
+
       const result = await res.json();
-  
+
       if (!res.ok) {
         console.error("❌ Server response:", result);
         alert(result.message || "Gửi đánh giá thất bại!");
         return;
       }
-  
-      alert("✅ Gửi đánh giá thành công!");
+
+      alert(userReview ? "✅ Cập nhật đánh giá thành công!" : "✅ Gửi đánh giá thành công!");
       window.location.reload();
-  
+
     } catch (err) {
       console.error("❌ Fetch error:", err);
       alert("Đã có lỗi xảy ra khi gửi đánh giá.");
@@ -114,7 +126,12 @@ const TourDetails = () => {
                   <Form onSubmit={submitHandler}>
                     <div className="d-flex align-items-center gap-3 mb-4 rating__group">
                       {[1, 2, 3, 4, 5].map(star => (
-                        <span key={star} onClick={() => setTourRating(star)}>
+                        <span
+                          key={star}
+                          onClick={() => setTourRating(star)}
+                          className={tourRating === star ? 'selected' : ''}
+                          style={{ cursor: 'pointer' }}
+                        >
                           {star}<i className="ri-star-s-fill"></i>
                         </span>
                       ))}
@@ -127,7 +144,7 @@ const TourDetails = () => {
                         required
                       />
                       <button className="btn primary__btn text-white" type="submit">
-                        Gửi đánh giá
+                        {userReview ? "Cập nhật đánh giá" : "Gửi đánh giá"}
                       </button>
                     </div>
                   </Form>

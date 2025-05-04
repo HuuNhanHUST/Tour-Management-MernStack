@@ -1,16 +1,13 @@
 import { createContext, useReducer, useEffect } from "react";
 
-// Tạo context
 export const AuthContext = createContext();
 
-// Khởi tạo state ban đầu
 const INITIAL_STATE = {
-  user: JSON.parse(localStorage.getItem("user")) || null,
-  loading: false,
+  user: null,
+  loading: true,
   error: null,
 };
 
-// Reducer xử lý các action
 const AuthReducer = (state, action) => {
   switch (action.type) {
     case "LOGIN_START":
@@ -19,8 +16,8 @@ const AuthReducer = (state, action) => {
       return { user: action.payload, loading: false, error: null };
     case "LOGIN_FAILURE":
       return { user: null, loading: false, error: action.payload };
-      case "REGISTER_SUCCESS":
-        return { user: null, loading: false, error: null };
+    case "REGISTER_SUCCESS":
+      return { user: null, loading: false, error: null };
     case "LOGOUT":
       return { user: null, loading: false, error: null };
     default:
@@ -28,13 +25,26 @@ const AuthReducer = (state, action) => {
   }
 };
 
-// Provider
 export const AuthContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(AuthReducer, INITIAL_STATE);
 
-  // Lưu user vào localStorage mỗi khi thay đổi
+  // 🚀 Đọc từ localStorage khi app load lần đầu
   useEffect(() => {
-    localStorage.setItem("user", JSON.stringify(state.user));
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) {
+      dispatch({ type: "LOGIN_SUCCESS", payload: storedUser });
+    } else {
+      dispatch({ type: "LOGOUT" });
+    }
+  }, []);
+
+  // ⏺️ Đồng bộ lại localStorage khi user thay đổi
+  useEffect(() => {
+    if (state.user) {
+      localStorage.setItem("user", JSON.stringify(state.user));
+    } else {
+      localStorage.removeItem("user");
+    }
   }, [state.user]);
 
   return (

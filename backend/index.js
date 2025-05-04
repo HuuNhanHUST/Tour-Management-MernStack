@@ -3,21 +3,28 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import session from "express-session";
+import passport from "./utils/passportFacebook.js"; // ⬅️ Cấu hình Facebook Login
+
+// Import routes
+import authRoute from './router/auth.js';
 import tourRoute from './router/tour.js';
 import userRoute from './router/user.js';
-import authRoute from './router/auth.js';
 import reviewRoute from './router/review.js';
 import bookingRoute from './router/booking.js';
+
 dotenv.config();
 const app = express();
-const port = process.env.PORT || 8000;
-const corsOptions ={
-  origin:true,
-  credentials:true
-}
-// Kết nối database
-mongoose.set("strictQuery", false);
+const port = process.env.PORT || 4000;
 
+// ✅ CORS cấu hình đúng để frontend gửi cookie
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true
+};
+
+// ✅ Kết nối MongoDB
+mongoose.set("strictQuery", false);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
@@ -30,23 +37,38 @@ const connectDB = async () => {
   }
 };
 
-// Middleware
-app.use(express.json());
+// ✅ Middleware
 app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
+app.use(express.json());
 app.use(cookieParser());
-app.use('/api/v1/auth', authRoute)
-app.use('/api/v1/tour', tourRoute)
-app.use('/api/v1/user', userRoute)
-app.use('/api/v1/review', reviewRoute)
-app.use('/api/v1/booking', bookingRoute)
+
+// ✅ Session & Passport cho Facebook Login
+app.use(session({
+  secret: 'facebooklogin_secret', // Có thể thay bằng biến .env nếu muốn
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ✅ Routes
+app.use('/api/v1/auth', authRoute);
+app.use('/api/v1/tour', tourRoute);
+app.use('/api/v1/user', userRoute);
+app.use('/api/v1/review', reviewRoute);
+app.use('/api/v1/booking', bookingRoute);
 
 // Route test
 app.get("/", (req, res) => {
   res.send("✅ API đang hoạt động");
 });
 
-// Start server
+// ✅ Start server
 app.listen(port, () => {
   connectDB();
-  console.log("🚀 Server đang chạy tại port", port);
+  console.log(`🚀 Server đang chạy tại port ${port}`);
 });

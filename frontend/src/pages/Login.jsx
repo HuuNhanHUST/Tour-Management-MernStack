@@ -26,7 +26,6 @@ const Login = () => {
   const handleClick = async (e) => {
     e.preventDefault();
 
-    // Dispatch bắt đầu login
     dispatch({ type: "LOGIN_START" });
     setError(null);
 
@@ -36,7 +35,8 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(credentials),
+        credentials: "include" // ✅ Rất quan trọng để nhận cookie
       });
 
       const result = await res.json();
@@ -47,14 +47,18 @@ const Login = () => {
         return;
       }
 
-      // Nếu đăng nhập thành công
       dispatch({ type: "LOGIN_SUCCESS", payload: result.data });
       alert("Đăng nhập thành công!");
-      navigate("/"); // chuyển đến trang chủ
+      navigate("/");
     } catch (err) {
       dispatch({ type: "LOGIN_FAILURE", payload: err.message });
       setError("Đã có lỗi xảy ra khi đăng nhập.");
     }
+  };
+
+  // ✅ Hàm xử lý login Facebook
+  const handleFacebookLogin = () => {
+    window.open(`${BASE_URL}/auth/facebook`, "_self");
   };
 
   return (
@@ -98,7 +102,18 @@ const Login = () => {
                     Đăng Nhập
                   </Button>
                 </Form>
-                <p>
+
+                <div className="mt-3 text-center">
+                  <Button
+                    className="btn primary_btn auth__btn"
+                    color="primary"
+                    onClick={handleFacebookLogin}
+                  >
+                    Đăng nhập bằng Facebook
+                  </Button>
+                </div>
+
+                <p className="mt-3">
                   Chưa có tài khoản? <Link to="/register">Tạo Ngay</Link>
                 </p>
               </div>
