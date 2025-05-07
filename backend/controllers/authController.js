@@ -2,7 +2,29 @@ import User from "../models/User.js";
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// ✅ Đăng nhập người dùng
+// Đăng ký
+export const register = async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: "Email đã tồn tại" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPwd = await bcrypt.hash(password, salt);
+
+    const newUser = new User({ username, email, password: hashedPwd });
+    await newUser.save();
+
+    res.status(200).json({ success: true, message: "Đăng ký thành công" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Đăng ký thất bại", error: err.message });
+  }
+};
+
+// Đăng nhập
 export const login = async (req, res) => {
   const email = req.body.email;
 
@@ -13,7 +35,6 @@ export const login = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
     }
 
-    // 👉 Nếu user có password mới so sánh, còn không thì skip (login Facebook không có password)
     if (user.password) {
       const isPasswordCorrect = await bcrypt.compare(req.body.password, user.password);
       if (!isPasswordCorrect) {
@@ -21,22 +42,20 @@ export const login = async (req, res) => {
       }
     }
 
-    const { password, role, ...rest } = user._doc;
+    const { password, ...rest } = user._doc;
 
-    // ✅ Tạo token
     const token = jwt.sign(
       { id: user._id, username: user.username, email: user.email, role: user.role },
       process.env.JWT_SECRET_KEY,
       { expiresIn: '15d' }
     );
 
-    // ✅ Đặt cookie chứa token
     res.cookie('accessToken', token, {
       httpOnly: true,
-      secure: false, 
+      secure: false, // đổi thành true khi dùng HTTPS
       sameSite: 'Lax',
       path: '/',
-      maxAge: 15 * 24 * 60 * 60 * 1000, 
+      maxAge: 15 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
@@ -46,7 +65,6 @@ export const login = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Lỗi khi đăng nhập:", err);
-    res.status(500).json({ success: false, message: 'Đăng nhập thất bại' });
+    res.status(500).json({ success: false, message: 'Đăng nhập thất bại', error: err.message });
   }
 };

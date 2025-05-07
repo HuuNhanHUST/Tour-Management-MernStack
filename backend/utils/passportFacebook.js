@@ -2,7 +2,7 @@ import passport from "passport";
 import FacebookStrategy from "passport-facebook";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-dotenv.config(); // ✅ Load biến môi trường
+dotenv.config();
 
 passport.use(new FacebookStrategy.Strategy(
   {
@@ -13,17 +13,29 @@ passport.use(new FacebookStrategy.Strategy(
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      // 🔎 Tìm user theo Facebook ID
-      let user = await User.findOne({ facebookId: profile.id });
+      const email = profile.emails?.[0]?.value || `${profile.id}@facebook.com`;
+      const baseUsername = profile.displayName || "facebook_user";
+
+      // Kiểm tra user tồn tại theo email (ưu tiên email hơn facebookId)
+      let user = await User.findOne({ email });
 
       if (!user) {
-        // ✅ Nếu chưa có thì tạo mới
+        // Xử lý nếu username bị trùng
+        let uniqueUsername = baseUsername;
+        let count = 1;
+        while (await User.findOne({ username: uniqueUsername })) {
+          uniqueUsername = `${baseUsername}_${count}`;
+          count++;
+        }
+
         user = new User({
-          username: profile.displayName,
-          email: profile.emails?.[0]?.value || `${profile.id}@facebook.com`,
+          username: uniqueUsername,
+          email: email,
           photo: profile.photos?.[0]?.value,
-          facebookId: profile.id
+          facebookId: profile.id,
+          password: null
         });
+
         await user.save();
       }
 
@@ -37,6 +49,7 @@ passport.use(new FacebookStrategy.Strategy(
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
+
 passport.deserializeUser(async (id, done) => {
   const user = await User.findById(id);
   done(null, user);

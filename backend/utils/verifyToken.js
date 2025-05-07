@@ -21,6 +21,7 @@ export const verifyToken = (req, res, next) => {
   });
 };
 
+// ✅ Dùng để kiểm tra người dùng bất kỳ đã login
 export const verifyUser = (req, res, next) => {
   verifyToken(req, res, () => {
     if (req.user) {
@@ -32,6 +33,7 @@ export const verifyUser = (req, res, next) => {
   });
 };
 
+// ✅ Dùng để kiểm tra role admin
 export const verifyAdmin = (req, res, next) => {
   verifyToken(req, res, () => {
     if (req.user.role === "admin") {

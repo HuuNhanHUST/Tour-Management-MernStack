@@ -19,10 +19,19 @@ const Header = () => {
   const { user, dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch({ type: "LOGOUT" });
-    localStorage.removeItem("user");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:4000/api/v1/auth/logout", {
+        method: "POST",
+        credentials: "include", // 👈 Gửi cookie kèm theo
+      });
+
+      dispatch({ type: "LOGOUT" });
+      localStorage.removeItem("user");
+      navigate("/login"); // 👈 Điều hướng sau logout
+    } catch (err) {
+      console.error("❌ Lỗi khi logout:", err);
+    }
   };
 
   useEffect(() => {
