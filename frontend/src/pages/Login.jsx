@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { Container, Row, Col, Form, FormGroup, Button } from "reactstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import "../styles/login.css";
 
 import loginImg from "../assets/images/login.png";
@@ -18,6 +18,7 @@ const Login = () => {
   const [error, setError] = useState(null);
   const { dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleChange = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
@@ -36,7 +37,7 @@ const Login = () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(credentials),
-        credentials: "include" // ✅ Rất quan trọng để nhận cookie
+        credentials: "include"
       });
 
       const result = await res.json();
@@ -49,16 +50,25 @@ const Login = () => {
 
       dispatch({ type: "LOGIN_SUCCESS", payload: result.data });
       alert("Đăng nhập thành công!");
-      navigate("/");
+
+      // ✅ Lấy slug từ URL trước đó hoặc mặc định "/"
+      const searchParams = new URLSearchParams(location.search);
+      const redirectSlug = searchParams.get("redirect");
+      if (redirectSlug) {
+        navigate(`/tour/${redirectSlug}`);
+      } else {
+        navigate("/");
+      }
+
     } catch (err) {
       dispatch({ type: "LOGIN_FAILURE", payload: err.message });
       setError("Đã có lỗi xảy ra khi đăng nhập.");
     }
   };
 
-  // ✅ Hàm xử lý login Facebook
   const handleFacebookLogin = () => {
-    window.open(`${BASE_URL}/auth/facebook`, "_self");
+    const redirectSlug = new URLSearchParams(location.search).get("redirect") || "";
+    window.open(`${BASE_URL}/auth/facebook?redirect=${redirectSlug}`, "_self");
   };
 
   return (

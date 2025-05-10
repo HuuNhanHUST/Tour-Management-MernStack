@@ -7,10 +7,12 @@ import "./header.css";
 
 import { AuthContext } from "../../context/AuthContext";
 
+// ✅ Menu chính (Lịch sử thanh toán chỉ hiển thị khi có user)
 const nav_links = [
   { path: "/home", display: "Home" },
   { path: "/about", display: "About" },
   { path: "/tour", display: "Tours" },
+  { path: "/payment-history", display: "Lịch sử thanh toán" } // ✅ thêm menu
 ];
 
 const Header = () => {
@@ -23,12 +25,12 @@ const Header = () => {
     try {
       await fetch("http://localhost:4000/api/v1/auth/logout", {
         method: "POST",
-        credentials: "include", // 👈 Gửi cookie kèm theo
+        credentials: "include",
       });
 
       dispatch({ type: "LOGOUT" });
       localStorage.removeItem("user");
-      navigate("/login"); // 👈 Điều hướng sau logout
+      navigate("/login");
     } catch (err) {
       console.error("❌ Lỗi khi logout:", err);
     }
@@ -60,19 +62,21 @@ const Header = () => {
             {/* Menu */}
             <div className={`navigation menu ${menuOpen ? "open" : ""}`}>
               <ul className="d-flex align-items-center gap-5">
-                {nav_links.map((item, index) => (
-                  <li className="nav__item" key={index}>
-                    <NavLink
-                      to={item.path}
-                      className={({ isActive }) =>
-                        isActive ? "active_link" : ""
-                      }
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {item.display}
-                    </NavLink>
-                  </li>
-                ))}
+                {nav_links
+                  .filter((item) => item.path !== "/payment-history" || user)
+                  .map((item, index) => (
+                    <li className="nav__item" key={index}>
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) =>
+                          isActive ? "active_link" : ""
+                        }
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {item.display}
+                      </NavLink>
+                    </li>
+                  ))}
               </ul>
             </div>
 
