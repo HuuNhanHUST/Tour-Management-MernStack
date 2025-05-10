@@ -6,26 +6,80 @@ import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "./utils/passportFacebook.js";
 
+import http from "http"; // ✅ Thêm
+import { Server } from "socket.io"; // ✅ Thêm
+
 // Import routes
 import authRoute from './router/auth.js';
 import tourRoute from './router/tour.js';
 import userRoute from './router/user.js';
 import reviewRoute from './router/review.js';
 import bookingRoute from './router/booking.js';
-import paymentRoute from './router/payment.js'; // ✅ vẫn giữ nguyên
+import paymentRoute from './router/payment.js';
+import dashboardRoute from "./router/dashboard.js";
+import chatRoute from "./router/chat.js";
 
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 
-// ✅ CORS cấu hình đúng để frontend gửi cookie
-const corsOptions = {
-  origin: 'http://localhost:3000',
-  credentials: true
-};
-app.use(cors(corsOptions));
+// ✅ Tạo HTTP Server để tích hợp Socket.IO
+const server = http.createServer(app);
 
-// ✅ Bổ sung nếu cần header đầy đủ
+// ✅ Cấu hình Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    credentials: true
+  }
+});
+
+// ✅ Biến toàn cục lưu người dùng online
+const onlineUsers = new Map();
+
+// ✅ Socket.IO sự kiện kết nối
+io.on("connection", (socket) => {
+  console.log("🟢 Socket connected:", socket.id);
+
+  // Lưu user khi họ đăng nhập
+  socket.on("addUser", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    console.log("✅ Online users:", [...onlineUsers.entries()]);
+  });
+
+  // Gửi tin nhắn đến user cụ thể
+  socket.on("sendMessage", ({ senderId, receiverId, content }) => {
+    const receiverSocketId = onlineUsers.get(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("receiveMessage", {
+        senderId,
+        content,
+        timestamp: Date.now()
+      });
+    }
+  });
+
+  // Xử lý ngắt kết nối
+  socket.on("disconnect", () => {
+    for (let [key, value] of onlineUsers.entries()) {
+      if (value === socket.id) {
+        onlineUsers.delete(key);
+        break;
+      }
+    }
+    console.log("🔴 Socket disconnected:", socket.id);
+  });
+});
+
+export { io }; // Nếu bạn cần dùng ở controller
+
+// ✅ CORS cho frontend truy cập (localhost:3000)
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
+
+// ✅ Header cho cookies
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   next();
@@ -34,7 +88,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Session & Passport cho Facebook Login
+// ✅ Session cho Passport
 app.use(session({
   secret: 'facebooklogin_secret',
   resave: false,
@@ -57,21 +111,25 @@ const connectDB = async () => {
   }
 };
 
-// ✅ Routes (sau CORS)
+// ✅ Public static file ảnh
+app.use("/uploads", express.static("uploads"));
+
+// ✅ Đăng ký các route RESTful
 app.use('/api/payment', paymentRoute);
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/tour', tourRoute);
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/review', reviewRoute);
 app.use('/api/v1/booking', bookingRoute);
-
+app.use('/api/v1/dashboard', dashboardRoute);
+app.use('/api/v1/chat', chatRoute);
 // ✅ Route test
 app.get("/", (req, res) => {
   res.send("✅ API đang hoạt động");
 });
 
-// ✅ Start server
-app.listen(port, () => {
+// ✅ Khởi động server kèm Socket.IO
+server.listen(port, () => {
   connectDB();
-  console.log(`🚀 Server đang chạy tại port ${port}`);
+  console.log(`🚀 Server + Socket.IO running at http://localhost:${port}`);
 });

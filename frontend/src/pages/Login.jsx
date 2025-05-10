@@ -51,10 +51,13 @@ const Login = () => {
       dispatch({ type: "LOGIN_SUCCESS", payload: result.data });
       alert("Đăng nhập thành công!");
 
-      // ✅ Lấy slug từ URL trước đó hoặc mặc định "/"
       const searchParams = new URLSearchParams(location.search);
       const redirectSlug = searchParams.get("redirect");
-      if (redirectSlug) {
+
+      // ✅ Điều hướng theo vai trò
+      if (result.data.role === "admin") {
+        navigate("/admin");
+      } else if (redirectSlug) {
         navigate(`/tour/${redirectSlug}`);
       } else {
         navigate("/");

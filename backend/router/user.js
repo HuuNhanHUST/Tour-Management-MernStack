@@ -9,6 +9,15 @@ import {
 
 const router = express.Router();
 import { verifyAdmin, verifyUser } from '../utils/verifyToken.js';
+const verifyAdminOrSelf = (req, res, next) => {
+  verifyUser(req, res, () => {
+    if (req.user.role === 'admin' || req.user.id === req.params.id) {
+      next();
+    } else {
+      return res.status(403).json({ success: false, message: "Không có quyền truy cập!" });
+    }
+  });
+};
 
 router.put('/:id',verifyUser, updateUser);
 router.delete('/:id',verifyUser, deleteUser);

@@ -44,8 +44,11 @@ export const AuthContextProvider = ({ children }) => {
           });
 
           if (res.data?.data) {
-            dispatch({ type: "LOGIN_SUCCESS", payload: res.data.data });
-          } else {
+            const fixedUser = {
+              ...res.data.data,
+              _id: res.data.data._id || res.data.data.id  // 🔧 fix key cho mọi trường hợp
+            };
+            dispatch({ type: "LOGIN_SUCCESS", payload: fixedUser });          } else {
             dispatch({ type: "LOGOUT" });
           }
         } catch (err) {

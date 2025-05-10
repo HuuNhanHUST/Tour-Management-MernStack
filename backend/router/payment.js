@@ -2,14 +2,25 @@ import express from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose'; // 👈 thêm để ép ObjectId
+import mongoose from 'mongoose';
+
 import Payment from '../models/Payment.js';
+import Booking from '../models/Booking.js';
 
 dotenv.config();
 const router = express.Router();
 
+// 👉 Gửi yêu cầu thanh toán đến MoMo
 router.post('/momo', async (req, res) => {
-  const { amount, orderId, orderInfo, userId } = req.body;
+  const {
+    amount,
+    orderId,
+    orderInfo,
+    userId,
+    tourId,
+    quantity,
+    email // 👈 thêm email người dùng
+  } = req.body;
 
   const partnerCode = process.env.MOMO_PARTNER_CODE;
   const accessKey = process.env.MOMO_ACCESS_KEY;
@@ -48,11 +59,14 @@ router.post('/momo', async (req, res) => {
 
   try {
     const momoRes = await axios.post(endpoint, requestBody);
-    console.log("✅ Phản hồi MoMo:", momoRes.data);
+    console.log("✅ MoMo response:", momoRes.data);
 
-    // ✅ ép userId sang ObjectId để lưu chuẩn
+    // ✅ Lưu đơn thanh toán tạm thời
     await Payment.create({
       userId: new mongoose.Types.ObjectId(userId),
+      userEmail: email,
+      tourId,
+      quantity,
       orderId,
       amount,
       status: 'Pending',
@@ -61,34 +75,49 @@ router.post('/momo', async (req, res) => {
 
     res.status(200).json(momoRes.data);
   } catch (error) {
-    console.error('❌ Lỗi khi gọi MoMo:', error.response?.data || error.message);
-    res.status(500).json({ message: 'Giao dịch thất bại với MoMo' });
+    console.error('❌ Lỗi gọi MoMo:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Tạo thanh toán thất bại' });
   }
 });
 
+// 👉 MoMo gọi về khi thanh toán xong (IPN)
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
   console.log("📩 IPN từ MoMo:", data);
 
   try {
-    await Payment.findOneAndUpdate(
+    const updatedPayment = await Payment.findOneAndUpdate(
       { orderId: data.orderId },
-      { status: data.resultCode === 0 ? "Success" : "Failed" }
+      { status: data.resultCode === 0 ? "Success" : "Failed" },
+      { new: true }
     );
+
+    if (data.resultCode === 0 && updatedPayment) {
+      // ✅ Tạo booking mới sau khi thanh toán thành công
+      await Booking.create({
+        userId: updatedPayment.userId,
+        userEmail: updatedPayment.userEmail,
+        tourId: updatedPayment.tourId,
+        guestSize: updatedPayment.quantity || 1,
+        totalAmount: updatedPayment.amount,
+        bookAt: new Date()
+      });
+    }
 
     res.status(200).json({ message: 'IPN received' });
   } catch (err) {
     console.error("❌ Lỗi xử lý IPN:", err.message);
-    res.status(500).json({ message: 'Lỗi xử lý IPN' });
+    res.status(500).json({ message: 'Xử lý IPN thất bại' });
   }
 });
 
+// 👉 Lịch sử thanh toán của người dùng
 router.get('/user/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
     const payments = await Payment.find({
-      userId: new mongoose.Types.ObjectId(userId) // ✅ convert khi query
+      userId: new mongoose.Types.ObjectId(userId)
     }).sort({ createdAt: -1 });
 
     res.status(200).json(payments);

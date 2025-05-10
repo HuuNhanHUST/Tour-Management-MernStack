@@ -1,4 +1,6 @@
 import express from "express";
+import upload from "../middleware/upload.js";
+import Tour from '../models/Tour.js';
 import {
   createTour,
   deleteTour,
@@ -10,30 +12,37 @@ import {
   updateTour
 } from "../controllers/tourController.js";
 import { verifyAdmin } from "../utils/verifyToken.js";
+
 const route = express.Router();
 
-// Create new tour 
-route.post('/',verifyAdmin, createTour);
+// ✅ Create tour (có upload ảnh)
+route.post("/", upload.single("photo"), verifyAdmin, createTour);
 
-// Update tour 
-route.put('/:id',verifyAdmin, updateTour);
+// ✅ Get toàn bộ tour (admin) — đặt trước :id để tránh bị override
+route.get("/all", verifyAdmin, async (req, res) => {
+  try {
+    const tours = await Tour.find().populate("reviews");
+    res.status(200).json({ success: true, data: tours });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Không thể lấy danh sách tour đầy đủ" });
+  }
+});
 
-// Delete tour 
-route.delete('/:id',verifyAdmin, deleteTour);
+// ✅ Các route search
+route.get("/search/getTourBySearch", getTourBySearch);
+route.get("/search/getFeaturedTours", getFeaturedTours);
+route.get("/search/getTourCount", getTourCount);
 
-// Get single tour 
-route.get('/:id', getSingleTour);
+// ✅ Get tất cả tour (phân trang)
+route.get("/", getAllTour);
 
-// Get all tours 
-route.get('/', getAllTour);
+// ✅ Get 1 tour
+route.get("/:id", getSingleTour);
 
-// Get by search 
-route.get('/search/getTourBySearch', getTourBySearch);
+// ✅ Update tour
+route.put("/:id", upload.single("photo"), verifyAdmin, updateTour);
 
-// Get featured tours 
-route.get('/search/getFeaturedTours', getFeaturedTours);
-// Get TourCount
-route.get('/search/getTourCount', getTourCount);
-
+// ✅ Delete tour
+route.delete("/:id", verifyAdmin, deleteTour);
 
 export default route;

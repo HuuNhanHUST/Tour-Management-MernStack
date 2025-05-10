@@ -3,12 +3,18 @@ import mongoose from "mongoose";
 const bookingSchema = new mongoose.Schema(
   {
     userId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: "User"
     },
     userEmail: {
       type: String,
       required: true,
+    },
+    tourId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "Tour"
     },
     tourName: {
       type: String,
@@ -24,13 +30,23 @@ const bookingSchema = new mongoose.Schema(
       min: 1,
     },
     phone: {
-      type: String, // ✅ nên để là String vì số điện thoại có thể bắt đầu bằng 0
+      type: String,
       required: true,
     },
     bookAt: {
       type: Date,
-      required: true, // ✅ nên bật lại để đảm bảo dữ liệu hợp lệ
+      required: true,
     },
+    totalAmount: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    paymentMethod: {
+      type: String,
+      default: "Cash", // hoặc "MoMo"
+      enum: ["Cash", "MoMo"]
+    }
   },
   { timestamps: true }
 );

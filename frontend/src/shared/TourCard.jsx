@@ -8,11 +8,16 @@ const TourCard = ({ tour }) => {
   const { _id, title, city, photo, price, featured, reviews } = tour;
   const { totalRating, avgRating } = caculateAvgRating(reviews);
 
+  // ✅ Xử lý đường dẫn ảnh nếu là ảnh upload nội bộ
+  const imageURL = photo?.startsWith("http") || photo?.startsWith("data:")
+    ? photo
+    : `http://localhost:4000/uploads/${photo}`;
+
   return (
     <div className="tour__card">
       <Card>
         <div className="tour__img">
-          <img src={photo} alt="tour-img" />
+          <img src={imageURL} alt="tour-img" />
           {featured && <span> Featured</span>}
         </div>
 

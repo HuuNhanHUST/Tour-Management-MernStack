@@ -10,9 +10,8 @@ const PaymentHistory = () => {
     const fetchPayments = async () => {
       try {
         const res = await axios.get(`http://localhost:4000/api/payment/user/${user._id}`, {
-            withCredentials: true
-          });
-        setPayments(res.data);
+          withCredentials: true
+        });        setPayments(res.data);
       } catch (err) {
         console.error("❌ Không thể lấy dữ liệu:", err.message);
       }

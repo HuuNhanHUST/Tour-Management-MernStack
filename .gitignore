@@ -1,11 +1,35 @@
-# Ignore node_modules in both backend and frontend
-frontend/node_modules/
+# Node (backend)
 backend/node_modules/
+backend/.env
+backend/uploads/
+backend/logs/
+backend/*.log
+backend/*.env*
 
-# Ignore build files
-dist/
-build/
+# React (frontend)
+frontend/node_modules/
+frontend/.env
+frontend/build/
+frontend/.next/
+frontend/coverage/
+frontend/logs/
 
-# Ignore environment files
+# Shared
 .env
-.env.local
+*.log
+*.env
+*.tgz
+*.zip
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# System
+Thumbs.db
+ehthumbs.db
+
+# OS
+.DS_Store
