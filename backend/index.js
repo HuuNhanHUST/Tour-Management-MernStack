@@ -48,16 +48,14 @@ io.on("connection", (socket) => {
   });
 
   // Gửi tin nhắn đến user cụ thể
-  socket.on("sendMessage", ({ senderId, receiverId, content }) => {
-    const receiverSocketId = onlineUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("receiveMessage", {
-        senderId,
-        content,
-        timestamp: Date.now()
-      });
-    }
-  });
+  socket.on("sendMessage", (message) => {
+  const { senderId, receiverId } = message;
+  const receiverSocketId = onlineUsers.get(receiverId);
+
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("receiveMessage", message);
+  }
+});
 
   // Xử lý ngắt kết nối
   socket.on("disconnect", () => {
