@@ -51,6 +51,9 @@ const AdminLayout = () => {
           <li className="nav-item">
             <Link className="nav-link text-white" to="/admin/users">👤 User Manager</Link>
           </li>
+          <li className="nav-item">
+            <Link className="nav-link text-white" to="/admin/chat">💬 Chat</Link> {/* 👈 THÊM DÒNG NÀY */}
+          </li>
           <li className="nav-item mt-3">
             <button onClick={handleLogout} className="btn btn-outline-light btn-sm w-100">
               🚪 Logout

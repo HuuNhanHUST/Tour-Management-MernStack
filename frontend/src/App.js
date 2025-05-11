@@ -13,6 +13,7 @@ import TourList from "./pages/admin/Tour/List";
 import AddTour from "./pages/admin/Tour/Add";
 import EditTour from "./pages/admin/Tour/Edit";
 import UserList from "./pages/admin/User/List";
+import AdminChatPanel from "./pages/admin/Chat/AdminChatPanel"; 
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -31,9 +32,9 @@ function App() {
           <Route path="tours/add" element={<AddTour />} />
           <Route path="tours/edit/:id" element={<EditTour />} />
           <Route path="users" element={<UserList />} />
+          <Route path="chat" element={<AdminChatPanel />} /> {/* 👈 THÊM DÒNG NÀY */}
         </Route>
       ) : (
-        // 🚫 Nếu không phải admin mà cố vào /admin thì redirect về home
         <Route path="/admin/*" element={<Navigate to="/" replace />} />
       )}
     </Routes>
