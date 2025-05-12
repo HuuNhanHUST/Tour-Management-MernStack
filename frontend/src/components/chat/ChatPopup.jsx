@@ -14,7 +14,19 @@ const ChatPopup = () => {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const bottomRef = useRef(null);
 
-  // 🟨 Lấy lịch sử tin nhắn
+  // ✅ ID thực của admin từ database
+  const ADMIN_ID = "6803343a6c0047c5fa9b60c6";
+
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    const time = date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const day = date.toLocaleDateString("vi-VN");
+    return `${time} - ${day}`;
+  };
+
   useEffect(() => {
     const fetchMessages = async () => {
       try {
@@ -30,13 +42,12 @@ const ChatPopup = () => {
     if (open && user) fetchMessages();
   }, [open, user]);
 
-  // ✅ Gửi tin nhắn
   const handleSend = async () => {
     if (!socket || !message.trim()) return;
 
     const msg = {
       senderId: user._id,
-      receiverId: "admin",
+      receiverId: ADMIN_ID,
       text: message,
       createdAt: new Date(),
     };
@@ -46,10 +57,11 @@ const ChatPopup = () => {
     setMessage("");
 
     try {
-     await axios.post("http://localhost:4000/api/v1/chat/send", {
-  receiverId: "admin",
-  text: msg.text, // ✅ phải là "text"
-}, { withCredentials: true });
+      await axios.post(
+        "http://localhost:4000/api/v1/chat/send",
+        { receiverId: ADMIN_ID, text: msg.text },
+        { withCredentials: true }
+      );
     } catch (err) {
       console.error("❌ Lỗi lưu tin nhắn:", err.message);
     }
@@ -59,30 +71,27 @@ const ChatPopup = () => {
     if (e.key === "Enter") handleSend();
   };
 
-  // ✅ Realtime: nhận tin nhắn
   useEffect(() => {
     if (!socket || !user) return;
 
     socket.emit("addUser", user._id);
 
     socket.on("receiveMessage", (msg) => {
-      if (
-        (msg.senderId === "admin" && msg.receiverId === user._id) ||
-        (msg.senderId === user._id && msg.receiverId === "admin")
-      ) {
+      const isRelated =
+        (String(msg.senderId) === ADMIN_ID && String(msg.receiverId) === String(user._id)) ||
+        (String(msg.senderId) === String(user._id) && String(msg.receiverId) === ADMIN_ID);
+
+      if (isRelated) {
         setChat((prev) => [...prev, msg]);
-        if (!open) setHasNewMessage(true); // 🔴 Chỉ khi đang đóng chat
+        if (!open) setHasNewMessage(true);
       }
     });
 
     return () => socket.off("receiveMessage");
   }, [socket, user, open]);
 
-  // ✅ Reset badge khi mở chat
   useEffect(() => {
-    if (open) {
-      setHasNewMessage(false);
-    }
+    if (open) setHasNewMessage(false);
   }, [open]);
 
   useEffect(() => {
@@ -96,16 +105,19 @@ const ChatPopup = () => {
       {open ? (
         <div className="chat-box shadow">
           <div className="chat-header bg-primary text-white d-flex justify-content-between p-2">
-            <span>💬 Hỗ trợ trực tuyến</span>
+<span>💬 Hỗ trợ trực tuyến</span>
             <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>✖</button>
           </div>
           <div className="chat-body">
             {chat.map((msg, idx) => (
               <div
                 key={idx}
-                className={`chat-message ${msg.senderId === user._id ? "me" : "you"}`}
+                className={`chat-message ${String(msg.senderId) === String(user._id) ? "me" : "you"}`}
               >
-                <div className="chat-bubble">{msg.text}</div>
+                <div className="chat-bubble">
+                  {msg.text}
+                  <div className="msg-time">{formatTime(msg.createdAt)}</div>
+                </div>
               </div>
             ))}
             <div ref={bottomRef}></div>

@@ -1,24 +1,43 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
+import { useNavigate } from "react-router-dom";
 
 const PaymentHistory = () => {
   const { user } = useContext(AuthContext);
+  const socket = useSocket();
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const res = await axios.get(`http://localhost:4000/api/payment/user/${user._id}`, {
-          withCredentials: true
-        });        setPayments(res.data);
-      } catch (err) {
-        console.error("❌ Không thể lấy dữ liệu:", err.message);
-      }
-    };
+  const fetchPayments = useCallback(async () => {
+    try {
+      const res = await axios.get(`http://localhost:4000/api/v1/payment/user/${user._id}`, {
+        withCredentials: true
+      });
+      setPayments(res.data);
+    } catch (err) {
+      console.error("❌ Không thể lấy dữ liệu:", err.message);
+    }
+  }, [user._id]);
 
+  useEffect(() => {
     if (user?._id) fetchPayments();
-  }, [user]);
+  }, [user, fetchPayments]);
+
+  useEffect(() => {
+    if (!socket || !user?._id) return;
+
+    const eventName = `payment-updated-${user._id}`;
+    socket.on(eventName, (updatedPayment) => {
+      console.log("📡 Đơn hàng được cập nhật realtime:", updatedPayment);
+      fetchPayments();
+    });
+
+    return () => {
+      socket.off(eventName);
+    };
+  }, [socket, user._id, fetchPayments]);
 
   return (
     <div className="container py-5">
@@ -67,6 +86,12 @@ const PaymentHistory = () => {
           </table>
         </div>
       )}
+
+      <div className="mt-4 text-center">
+        <button className="btn btn-primary" onClick={() => navigate("/")}>
+          ⬅️ Quay về trang chủ
+        </button>
+      </div>
     </div>
   );
 };

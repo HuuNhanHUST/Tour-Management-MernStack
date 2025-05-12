@@ -1,3 +1,4 @@
+// 📁 src/pages/admin/AdminLayout.jsx
 import React, { useContext, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -9,7 +10,7 @@ const AdminLayout = () => {
 
   useEffect(() => {
     if (!user || user.role !== "admin") {
-      navigate("/"); // 🚫 chặn người không phải admin
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -34,7 +35,6 @@ const AdminLayout = () => {
       <div className="bg-dark text-white p-3" style={{ width: "250px" }}>
         <h4>Admin Panel</h4>
 
-        {/* 👤 Hiển thị tên admin */}
         {user && (
           <div className="mt-3 small">
             <i className="ri-user-line me-2"></i> {user.username || user.email}
@@ -52,7 +52,10 @@ const AdminLayout = () => {
             <Link className="nav-link text-white" to="/admin/users">👤 User Manager</Link>
           </li>
           <li className="nav-item">
-            <Link className="nav-link text-white" to="/admin/chat">💬 Chat</Link> {/* 👈 THÊM DÒNG NÀY */}
+            <Link className="nav-link text-white" to="/admin/chat">💬 Chat</Link>
+          </li>
+          <li className="nav-item">
+            <Link className="nav-link text-white" to="/admin/payments">💳 Payment Manager</Link>
           </li>
           <li className="nav-item mt-3">
             <button onClick={handleLogout} className="btn btn-outline-light btn-sm w-100">

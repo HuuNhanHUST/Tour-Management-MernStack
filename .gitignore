@@ -13,6 +13,7 @@ frontend/build/
 frontend/.next/
 frontend/coverage/
 frontend/logs/
+frontend/node_modules/.cache/
 
 # Shared
 .env
@@ -30,6 +31,9 @@ frontend/logs/
 # System
 Thumbs.db
 ehthumbs.db
-
-# OS
 .DS_Store
+
+# Build cache & large files
+.cache/
+*.pack
+*.pack.old

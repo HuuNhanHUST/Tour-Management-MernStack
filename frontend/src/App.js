@@ -14,6 +14,8 @@ import AddTour from "./pages/admin/Tour/Add";
 import EditTour from "./pages/admin/Tour/Edit";
 import UserList from "./pages/admin/User/List";
 import AdminChatPanel from "./pages/admin/Chat/AdminChatPanel"; 
+import PaymentList from "./pages/admin/PaymentList";
+
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -33,6 +35,7 @@ function App() {
           <Route path="tours/edit/:id" element={<EditTour />} />
           <Route path="users" element={<UserList />} />
           <Route path="chat" element={<AdminChatPanel />} /> {/* 👈 THÊM DÒNG NÀY */}
+          <Route path="payments" element={<PaymentList />} />
         </Route>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/" replace />} />

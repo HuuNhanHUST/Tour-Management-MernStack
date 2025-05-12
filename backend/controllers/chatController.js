@@ -1,6 +1,8 @@
 import Chat from '../models/Chat.js';
 import User from '../models/User.js';
-import mongoose from 'mongoose';
+
+// 👇 Gán _id thật của admin tại đây
+const ADMIN_ID = "6803343a6c0047c5fa9b60c6"; // ✅ thay cho "admin"
 
 // Gửi tin nhắn (cả admin và user)
 export const sendMessage = async (req, res) => {
@@ -24,13 +26,12 @@ export const sendMessage = async (req, res) => {
 // Lịch sử chat của user đang đăng nhập với admin
 export const getMessages = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user.id);
-    const adminId = "admin";
+    const userId = req.user.id;
 
     const messages = await Chat.find({
       $or: [
-        { senderId: userId, receiverId: adminId },
-        { senderId: adminId, receiverId: userId }
+        { senderId: userId, receiverId: ADMIN_ID },
+        { senderId: ADMIN_ID, receiverId: userId }
       ]
     }).sort({ createdAt: 1 });
 
@@ -43,8 +44,12 @@ export const getMessages = async (req, res) => {
 // Lấy danh sách người dùng đã gửi tin nhắn tới admin
 export const getChatUsers = async (req, res) => {
   try {
-    const senderIds = await Chat.distinct("senderId", { receiverId: "admin" });
-    const users = await User.find({ _id: { $in: senderIds } }).select("fullName email");
+    const senderIds = await Chat.distinct("senderId", { receiverId: ADMIN_ID });
+
+    // Lọc ra những ID khác ADMIN_ID (tránh lỗi khi admin gửi trước)
+    const validUserIds = senderIds.filter(id => String(id) !== ADMIN_ID);
+
+    const users = await User.find({ _id: { $in: validUserIds } }).select("fullName email");
 
     res.status(200).json({ success: true, data: users });
   } catch (err) {
@@ -56,7 +61,7 @@ export const getChatUsers = async (req, res) => {
 export const getMessagesWithUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const adminId = req.user.id; // 👈 chính là admin đang đăng nhập
+    const adminId = req.user.id;
 
     const messages = await Chat.find({
       $or: [
@@ -65,7 +70,7 @@ export const getMessagesWithUser = async (req, res) => {
       ]
     }).sort({ createdAt: 1 });
 
-    res.status(200).json(messages);
+    res.status(200).json({ success: true, data: messages });
   } catch (err) {
     console.error("❌ Lỗi khi lấy tin nhắn với user:", err.message);
     res.status(500).json({ message: "Không thể lấy tin nhắn" });
