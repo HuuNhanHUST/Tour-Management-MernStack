@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useMemo,
+  useCallback,
+} from "react";
 import axios from "axios";
 import {
   Table,
@@ -12,7 +18,7 @@ import { BASE_URL } from "../../../utils/config";
 import { AuthContext } from "../../../context/AuthContext";
 
 const UserList = () => {
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -20,15 +26,25 @@ const UserList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ Load dữ liệu người dùng
+  // 🔍 Log debug
+  console.log("🔁 UserList re-render");
+
+  // ✅ Gọi API lấy danh sách user (chặn setState nếu dữ liệu giống nhau)
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${BASE_URL}/user`, {
         withCredentials: true,
       });
-      setUsers(res.data.data || []);
+
+      const newUsers = res.data.data || [];
+      setUsers((prevUsers) => {
+        const isSame =
+          JSON.stringify(prevUsers) === JSON.stringify(newUsers);
+        return isSame ? prevUsers : newUsers;
+      });
     } catch (err) {
+      console.error("❌ Lỗi fetch users:", err.message);
       setError("Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
@@ -39,7 +55,6 @@ const UserList = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // ✅ Đổi quyền user ↔ admin
   const toggleRole = async (id, currentRole) => {
     if (user._id === id) {
       alert("Không thể tự hạ quyền chính mình");
@@ -47,7 +62,11 @@ const UserList = () => {
     }
     const newRole = currentRole === "admin" ? "user" : "admin";
     try {
-      await axios.put(`${BASE_URL}/user/${id}`, { role: newRole }, { withCredentials: true });
+      await axios.put(
+        `${BASE_URL}/user/${id}`,
+        { role: newRole },
+        { withCredentials: true }
+      );
       setUsers((prev) =>
         prev.map((u) => (u._id === id ? { ...u, role: newRole } : u))
       );
@@ -56,25 +75,24 @@ const UserList = () => {
     }
   };
 
-  // ✅ Xoá user
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc muốn xoá người dùng này?")) return;
     try {
-      await axios.delete(`${BASE_URL}/user/${id}`, { withCredentials: true });
-      setUsers(users.filter((u) => u._id !== id));
+      await axios.delete(`${BASE_URL}/user/${id}`, {
+        withCredentials: true,
+      });
+      setUsers((prev) => prev.filter((u) => u._id !== id));
     } catch {
       alert("Xoá người dùng thất bại!");
     }
   };
 
-  // ✅ Avatar fallback
   const getAvatar = (photo) => {
     if (!photo) return "/default-avatar.png";
     if (photo.startsWith("http")) return photo;
     return `${BASE_URL}/uploads/${photo}`;
   };
 
-  // ✅ Lọc danh sách user
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const matchRole = filterRole === "all" || u.role === filterRole;
@@ -85,8 +103,7 @@ const UserList = () => {
     });
   }, [users, search, filterRole]);
 
-  // ✅ Loading state
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="text-center py-5">
         <div className="spinner-border text-primary" role="status"></div>
@@ -94,7 +111,6 @@ const UserList = () => {
     );
   }
 
-  // ✅ Error state
   if (error) {
     return <div className="text-center text-danger py-5">{error}</div>;
   }
@@ -112,9 +128,16 @@ const UserList = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <Dropdown isOpen={dropdownOpen} toggle={() => setDropdownOpen(!dropdownOpen)}>
+        <Dropdown
+          isOpen={dropdownOpen}
+          toggle={() => setDropdownOpen(!dropdownOpen)}
+        >
           <DropdownToggle caret>
-            {filterRole === "all" ? "Tất cả" : filterRole === "admin" ? "Admin" : "User"}
+            {filterRole === "all"
+              ? "Tất cả"
+              : filterRole === "admin"
+              ? "Admin"
+              : "User"}
           </DropdownToggle>
           <DropdownMenu>
             <DropdownItem onClick={() => setFilterRole("all")}>Tất cả</DropdownItem>
@@ -138,7 +161,9 @@ const UserList = () => {
         <tbody>
           {filteredUsers.length === 0 ? (
             <tr>
-              <td colSpan="6" className="text-center">Không có người dùng nào</td>
+              <td colSpan="6" className="text-center">
+                Không có người dùng nào
+              </td>
             </tr>
           ) : (
             filteredUsers.map((u, index) => (
@@ -158,7 +183,11 @@ const UserList = () => {
                 <td>{u.username}</td>
                 <td>{u.email}</td>
                 <td>
-                  <span className={`badge bg-${u.role === "admin" ? "danger" : "secondary"}`}>
+                  <span
+                    className={`badge bg-${
+                      u.role === "admin" ? "danger" : "secondary"
+                    }`}
+                  >
                     {u.role}
                   </span>
                 </td>
@@ -186,4 +215,4 @@ const UserList = () => {
   );
 };
 
-export default UserList;
+export default React.memo(UserList);

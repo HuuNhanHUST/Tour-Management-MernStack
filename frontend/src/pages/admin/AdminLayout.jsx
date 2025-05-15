@@ -1,34 +1,18 @@
-// 📁 src/pages/admin/AdminLayout.jsx
 import React, { useContext, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const AdminLayout = () => {
-  const { user, dispatch } = useContext(AuthContext);
+  const { user, loading, dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loading) return;
     if (!user || user.role !== "admin") {
       navigate("/");
     }
-  }, [user, navigate]);
-
-  const handleLogout = async () => {
-    try {
-      await fetch("http://localhost:4000/api/v1/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      dispatch({ type: "LOGOUT" });
-      localStorage.removeItem("user");
-      navigate("/login");
-    } catch (err) {
-      console.error("❌ Lỗi logout:", err);
-      alert("Lỗi khi đăng xuất");
-    }
-  };
+  }, [user, loading, navigate]);
 
   return (
     <div className="d-flex" style={{ minHeight: "100vh" }}>
@@ -58,7 +42,20 @@ const AdminLayout = () => {
             <Link className="nav-link text-white" to="/admin/payments">💳 Payment Manager</Link>
           </li>
           <li className="nav-item mt-3">
-            <button onClick={handleLogout} className="btn btn-outline-light btn-sm w-100">
+            <button onClick={async () => {
+              try {
+                await fetch("http://localhost:4000/api/v1/auth/logout", {
+                  method: "POST",
+                  credentials: "include",
+                });
+                dispatch({ type: "LOGOUT" });
+                localStorage.removeItem("user");
+                navigate("/login");
+              } catch (err) {
+                console.error("❌ Lỗi logout:", err);
+                alert("Lỗi khi đăng xuất");
+              }
+            }} className="btn btn-outline-light btn-sm w-100">
               🚪 Logout
             </button>
           </li>
@@ -72,4 +69,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default React.memo(AdminLayout); // ✅ Bọc memo

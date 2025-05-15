@@ -34,12 +34,16 @@ const PaymentList = () => {
   };
 
   const filteredPayments = payments.filter((p) => {
-    const matchesStatus = filterStatus === "All" || p.status === filterStatus;
-    const matchesSearch = p.userId?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
-
+  const matchesStatus = filterStatus === "All" || p.status === filterStatus;
+  const matchesSearch =
+    searchTerm.trim() === "" ||
+    (p.userId &&
+      ((p.userId.username &&
+        p.userId.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+       (p.userId.email &&
+        p.userId.email.toLowerCase().includes(searchTerm.toLowerCase()))));
+  return matchesStatus && matchesSearch;
+});
   return (
     <div className="container py-4">
       <h3 className="mb-4 fw-bold d-flex align-items-center gap-2">

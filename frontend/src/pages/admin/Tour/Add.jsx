@@ -16,16 +16,15 @@ const AddTour = () => {
   });
 
   const [imageFile, setImageFile] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null); // ✅ ảnh xem trước
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
 
     let newValue = value;
 
-    // ✅ Xử lý loại bỏ 0 đầu nếu nhập số
     if (type === "text" && ["distance", "price", "maxGroupSize"].includes(name)) {
       newValue = value.replace(/^0+/, "");
-      // Không cho để rỗng
       if (newValue === "") newValue = "0";
     }
 
@@ -33,6 +32,14 @@ const AddTour = () => {
       ...tour,
       [name]: newValue,
     });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewImage(URL.createObjectURL(file)); // ✅ tạo ảnh preview
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -50,7 +57,7 @@ const AddTour = () => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        withCredentials: true, // ✅ Gửi cookie
+        withCredentials: true,
       });
 
       alert("✅ Thêm tour thành công!");
@@ -164,9 +171,17 @@ const AddTour = () => {
             type="file"
             accept="image/*"
             className="form-control"
-            onChange={(e) => setImageFile(e.target.files[0])}
+            onChange={handleImageChange}
             required
           />
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Xem trước"
+              className="img-thumbnail mt-2"
+              style={{ maxWidth: "300px", height: "auto" }}
+            />
+          )}
         </div>
 
         <div className="col-12">

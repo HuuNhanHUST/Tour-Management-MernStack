@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 
 import Payment from '../models/Payment.js';
 import Booking from '../models/Booking.js';
+import User from '../models/User.js';
 import { io } from '../index.js';
 import { sendSuccessEmail } from '../utils/emailSender.js';
 
@@ -20,7 +21,7 @@ router.post('/momo', async (req, res) => {
   const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
   const rawAmount = amount.toString();
 
-  const rawSignature = 
+  const rawSignature =
     `partnerCode=${process.env.MOMO_PARTNER_CODE}&accessKey=${process.env.MOMO_ACCESS_KEY}&requestId=${requestId}` +
     `&amount=${rawAmount}&orderId=${orderId}&orderInfo=${orderInfo}` +
     `&returnUrl=${process.env.MOMO_RETURN_URL}&notifyUrl=${process.env.MOMO_NOTIFY_URL}&extraData=`;
@@ -48,16 +49,30 @@ router.post('/momo', async (req, res) => {
     const momoRes = await axios.post(process.env.MOMO_API_URL, requestBody);
     console.log("✅ MoMo response:", momoRes.data);
 
+    // 🔎 Nếu không truyền email, fallback từ userId
+    let finalEmail = email;
+    if (!finalEmail) {
+      const user = await User.findById(userId);
+      finalEmail = user?.email || "";
+    }
+
+    console.log("📨 Email sẽ lưu:", finalEmail);
+
     await Payment.create({
-      userId: new mongoose.Types.ObjectId(userId),
-      userEmail: email,
-      tourId,
-      quantity,
-      orderId,
-      amount,
-      status: 'Pending',
-      payType: 'MoMo'
-    });
+  userId: new mongoose.Types.ObjectId(userId),
+  userEmail: finalEmail,
+  tourId,
+  quantity,
+  orderId,
+  amount,
+  status: 'Pending',
+  payType: 'MoMo',
+
+  // 🔥 Thêm các trường này nếu frontend truyền
+  tourName: req.body.tourName,
+  fullName: req.body.fullName,
+  phone: req.body.phone
+});
 
     res.status(200).json(momoRes.data);
   } catch (error) {
@@ -65,6 +80,7 @@ router.post('/momo', async (req, res) => {
     res.status(500).json({ message: 'Tạo thanh toán thất bại' });
   }
 });
+
 
 // MoMo gọi về khi thanh toán xong
 router.post('/momo-notify', async (req, res) => {
@@ -80,13 +96,18 @@ router.post('/momo-notify', async (req, res) => {
 
     if (data.resultCode === 0 && updatedPayment) {
       await Booking.create({
-        userId: updatedPayment.userId._id,
-        userEmail: updatedPayment.userEmail,
-        tourId: updatedPayment.tourId,
-        guestSize: updatedPayment.quantity || 1,
-        totalAmount: updatedPayment.amount,
-        bookAt: new Date()
-      });
+  userId: updatedPayment.userId._id,
+  userEmail: updatedPayment.userEmail,
+  tourId: updatedPayment.tourId,
+  tourName: updatedPayment.tourName || "Chưa rõ",
+  fullName: updatedPayment.fullName || updatedPayment.userId?.username || "Người dùng",
+  phone: updatedPayment.phone || "Không rõ",
+  guestSize: updatedPayment.quantity || 1,
+  totalAmount: updatedPayment.amount,
+  bookAt: new Date(),
+  paymentMethod: "MoMo"
+});
+
 
       if (updatedPayment.userEmail) {
         await sendSuccessEmail(

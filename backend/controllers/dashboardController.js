@@ -22,20 +22,20 @@ export const getTourCount = async (req, res) => {
   }
 };
 
-// 🔹 Tổng số đơn hàng
+// 🔹 Tổng số đơn hàng đã thanh toán
 export const getBookingCount = async (req, res) => {
   try {
-    const count = await Booking.estimatedDocumentCount();
+    const count = await Booking.countDocuments({ totalAmount: { $gt: 0 } });
     res.status(200).json({ success: true, count });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy số lượng đơn hàng' });
   }
 };
 
-// 🔹 Tổng doanh thu
+// 🔹 Tổng doanh thu từ các đơn đã thanh toán
 export const getTotalRevenue = async (req, res) => {
   try {
-    const bookings = await Booking.find();
+    const bookings = await Booking.find({ totalAmount: { $gt: 0 } });
     const total = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
     res.status(200).json({ success: true, total });
   } catch (err) {
@@ -43,14 +43,14 @@ export const getTotalRevenue = async (req, res) => {
   }
 };
 
-// 🔹 Tổng hợp thống kê dashboard (gọi 1 lần duy nhất)
+// 🔹 Tổng hợp toàn bộ thống kê dashboard (gọi 1 lần duy nhất)
 export const getDashboardStats = async (req, res) => {
   try {
     const [userCount, tourCount, bookingCount, bookings] = await Promise.all([
       User.estimatedDocumentCount(),
       Tour.estimatedDocumentCount(),
-      Booking.estimatedDocumentCount(),
-      Booking.find()
+      Booking.countDocuments({ totalAmount: { $gt: 0 } }),
+      Booking.find({ totalAmount: { $gt: 0 } })
     ]);
 
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);

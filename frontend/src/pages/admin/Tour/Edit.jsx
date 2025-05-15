@@ -27,7 +27,16 @@ const EditTour = () => {
       .then((res) => {
         const tourData = res.data.data;
         setTour(tourData);
-        setPreviewUrl(`http://localhost:4000/uploads/${tourData.photo}`);
+
+        // ✅ Xử lý preview từ dữ liệu ban đầu
+        const imageURL =
+          tourData.photo?.startsWith("http") ||
+          tourData.photo?.startsWith("data:") ||
+          tourData.photo?.startsWith("/tour-images")
+            ? tourData.photo
+            : `http://localhost:4000/uploads/${tourData.photo}`;
+
+        setPreviewUrl(imageURL);
       })
       .catch(() => {
         alert("Không tìm thấy tour cần sửa.");

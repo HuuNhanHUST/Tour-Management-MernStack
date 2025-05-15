@@ -27,8 +27,8 @@ const TourDetails = () => {
       const existing = tour.reviews?.find(r => r.username === user.username);
       if (existing) {
         setUserReview(existing);
-        reviewMsgRef.current.value = existing.reviewText; // Gán nội dung cũ
-        setTourRating(existing.rating);                   // Gán số sao cũ
+        reviewMsgRef.current.value = existing.reviewText;
+        setTourRating(existing.rating);
       }
     }
   }, [tour, user]);
@@ -89,6 +89,14 @@ const TourDetails = () => {
 
   const { photo, title, desc, price, address, reviews, city, distance, maxGroupSize } = tour;
 
+  // ✅ Xử lý ảnh (cả local public, uploads, link online)
+  const imageURL =
+    photo?.startsWith("http") ||
+    photo?.startsWith("data:") ||
+    photo?.startsWith("/tour-images")
+      ? photo
+      : `http://localhost:4000/uploads/${photo}`;
+
   return (
     <>
       <section>
@@ -96,7 +104,8 @@ const TourDetails = () => {
           <Row>
             <Col lg="8">
               <div className="tour__content">
-                <img src={photo} alt={title} />
+                <img src={imageURL} alt={title} className="img-fluid mb-4" />
+
                 <div className="tour__info">
                   <h2>{title}</h2>
 

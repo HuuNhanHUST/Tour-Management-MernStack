@@ -1,4 +1,4 @@
-import { createContext, useReducer, useEffect } from "react";
+import { createContext, useReducer, useEffect, useMemo } from "react";
 import axios from "axios";
 
 export const AuthContext = createContext();
@@ -29,26 +29,26 @@ const AuthReducer = (state, action) => {
 export const AuthContextProvider = ({ children }) => {
   const [state, dispatch] = useReducer(AuthReducer, INITIAL_STATE);
 
-  // ✅ Khi app khởi chạy, lấy user từ localStorage hoặc từ cookie (nếu login bằng Facebook)
   useEffect(() => {
+    let isMounted = true;
     const storedUser = JSON.parse(localStorage.getItem("user"));
 
     if (storedUser) {
       dispatch({ type: "LOGIN_SUCCESS", payload: storedUser });
     } else {
-      // 🆕 Gọi API /me nếu không có trong localStorage (login Facebook)
       const fetchUserFromCookie = async () => {
         try {
           const res = await axios.get("http://localhost:4000/api/v1/auth/me", {
             withCredentials: true,
           });
 
-          if (res.data?.data) {
+          if (res.data?.data && isMounted) {
             const fixedUser = {
               ...res.data.data,
-              _id: res.data.data._id || res.data.data.id  // 🔧 fix key cho mọi trường hợp
+              _id: res.data.data._id || res.data.data.id,
             };
-            dispatch({ type: "LOGIN_SUCCESS", payload: fixedUser });          } else {
+            dispatch({ type: "LOGIN_SUCCESS", payload: fixedUser });
+          } else {
             dispatch({ type: "LOGOUT" });
           }
         } catch (err) {
@@ -59,9 +59,12 @@ export const AuthContextProvider = ({ children }) => {
 
       fetchUserFromCookie();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // ✅ Đồng bộ localStorage mỗi khi user thay đổi
   useEffect(() => {
     if (state.user) {
       localStorage.setItem("user", JSON.stringify(state.user));
@@ -70,15 +73,16 @@ export const AuthContextProvider = ({ children }) => {
     }
   }, [state.user]);
 
+  // ✅ Dùng useMemo để tránh tạo object mới mỗi lần re-render
+  const contextValue = useMemo(() => ({
+    user: state.user,
+    loading: state.loading,
+    error: state.error,
+    dispatch,
+  }), [state.user, state.loading, state.error]);
+
   return (
-    <AuthContext.Provider
-      value={{
-        user: state.user,
-        loading: state.loading,
-        error: state.error,
-        dispatch,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

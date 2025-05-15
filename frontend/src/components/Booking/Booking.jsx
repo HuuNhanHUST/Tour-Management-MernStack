@@ -46,40 +46,40 @@ const Booking = ({ tour, avgRating }) => {
     navigate("/thank-you");
   };
 
-  const handleMomoPayment = async () => {
-    if (!user) {
-      alert("Vui lòng đăng nhập để thanh toán!");
-      navigate("/login");
-      return;
+ const handleMomoPayment = async () => {
+  if (!user) {
+    alert("Vui lòng đăng nhập để thanh toán!");
+    navigate("/login");
+    return;
+  }
+
+  const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
+
+  try {
+    const response = await axios.post("http://localhost:4000/api/v1/payment/momo", {
+      amount: validAmount,
+      orderId: `ORDER_${Date.now()}`,
+      orderInfo: `Thanh toán tour: ${title}`,
+      userId: user._id,
+      email: user.email,                          // ✅ Gửi email
+      tourId: tour._id,                           // ✅ Tour ID
+      tourName: tour.title,                       // ✅ Tour name
+      fullName: credentials.fullName,             // ✅ Tên khách
+      phone: credentials.phone,                   // ✅ SĐT
+      quantity: credentials.guestSize             // ✅ Số lượng người
+    });
+
+    if (response.data && response.data.payUrl) {
+      window.location.href = response.data.payUrl;
+    } else {
+      alert("Không thể tạo thanh toán MoMo.");
     }
+  } catch (error) {
+    console.error("❌ Lỗi gọi MoMo:", error?.response?.data || error.message);
+    alert("Thanh toán thất bại.");
+  }
+};
 
-    const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
-
-    console.log("📌 amount gửi đến MoMo:", validAmount, typeof validAmount);
-
-    try {
-      const response = await axios.post(
-        "http://localhost:4000/api/payment/momo",
-        {
-          amount: validAmount,
-          orderId: `ORDER_${Date.now()}`,
-          orderInfo: `Thanh toán tour: ${title}`,
-          userId: user._id
-        }
-      );
-
-      console.log("➡️ Phản hồi MoMo:", response.data);
-
-      if (response.data && response.data.payUrl) {
-        window.location.href = response.data.payUrl;
-      } else {
-        alert("Không thể tạo thanh toán MoMo.");
-      }
-    } catch (error) {
-      console.error("❌ Lỗi gọi MoMo:", error?.response?.data || error.message);
-      alert("Thanh toán thất bại.");
-    }
-  };
 
   return (
     <div className="booking">

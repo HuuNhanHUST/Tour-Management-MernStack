@@ -8,8 +8,11 @@ const TourCard = ({ tour }) => {
   const { _id, title, city, photo, price, featured, reviews } = tour;
   const { totalRating, avgRating } = caculateAvgRating(reviews);
 
-  // ✅ Xử lý đường dẫn ảnh nếu là ảnh upload nội bộ
-  const imageURL = photo?.startsWith("http") || photo?.startsWith("data:")
+  // ✅ Xử lý đường dẫn ảnh (dùng ảnh trong thư mục public/tour-images)
+const imageURL =
+  photo?.startsWith("http") ||
+  photo?.startsWith("data:") ||
+  photo?.startsWith("/tour-images")
     ? photo
     : `http://localhost:4000/uploads/${photo}`;
 
@@ -17,8 +20,8 @@ const TourCard = ({ tour }) => {
     <div className="tour__card">
       <Card>
         <div className="tour__img">
-          <img src={imageURL} alt="tour-img" />
-          {featured && <span> Featured</span>}
+          <img src={imageURL} alt={title} className="img-fluid" />
+          {featured && <span>Featured</span>}
         </div>
 
         <CardBody>
@@ -27,8 +30,11 @@ const TourCard = ({ tour }) => {
               <i className="ri-map-pin-line"></i> {city}
             </span>
             <span className="tour__rating d-flex align-items-center gap-1">
-              <i className="ri-star-line"></i> {avgRating === 0 ? null : avgRating}
-              {totalRating === 0 ? 'Chưa có đánh giá nào' : <span>({reviews.length})</span>}
+              <i className="ri-star-line"></i>{' '}
+              {avgRating === 0 ? null : avgRating}
+              {totalRating === 0
+                ? 'Chưa có đánh giá nào'
+                : <span>({reviews.length})</span>}
             </span>
           </div>
 

@@ -129,6 +129,9 @@ app.use('/api/v1/booking', bookingRoute);
 app.use('/api/v1/dashboard', dashboardRoute);
 app.use('/api/v1/chat', chatRoute);
 app.use("/api/v1/payment", paymentRoute);
+
+
+
 // ✅ Route test
 app.get("/", (req, res) => {
   res.send("✅ API đang hoạt động");
