@@ -1,50 +1,43 @@
 .tour__content img {
-    width: 100%;
-    border-radius: 0.5rem;
-    margin-bottom: 2.5rem;
-  }
-  
-  .tour__info, 
-  .tour__reviews{
-    border-radius: 0.5rem;
-    border: 1px solid rgb(229, 231, 235);
-    padding: 2rem;
-  }
-  
-  .tour__info h2{
-    font-size: 1.5rem;
-  }
-  .tour__info span {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-style: 1rem; /* This should likely be font-size */
-    color: var(--text-color);
-  }
-  
-  .tour__info span i {
-    color: var(--heading-color);
-    font-size: 1.1rem;
-  }
-  
-  .tour__extra-details {
-    display: flex;
-    align-items: center;
-    column-gap: 2.7rem;
-    margin-top: 1rem;
-    margin-bottom: 2.5rem;
-  }
+  width: 100%;
+  border-radius: 0.5rem;
+  margin-bottom: 2.5rem;
+}
 
-  .tour__info h5 {
-    margin-bottom: 1rem;
-    font-size: 1.3rem;
-  }
+.tour__info,
+.tour__reviews {
+  border-radius: 0.5rem;
+  border: 1px solid rgb(229, 231, 235);
+  padding: 2rem;
+}
 
-  .tour__info p{
-    line-height: 30px;
-    font-size: 1rem;
-    color: var(--text-color);
-  }
+.tour__info h2 {
+  font-size: 1.5rem;
+}
+
+.tour__info span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem; /* ✅ sửa từ font-style thành font-size */
+  color: var(--text-color);
+}
+
+.tour__info span i {
+  color: var(--heading-color);
+  font-size: 1.1rem;
+}
+
+.tour__info h5 {
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.tour__info p {
+  line-height: 30px;
+  font-size: 1rem;
+  color: var(--text-color);
+}
 
 .rating__group span {
   font-size: 1.1rem;
@@ -77,13 +70,12 @@
 .review__input input:focus {
   outline: none;
 }
+
 .review__item {
   display: flex;
   align-items: center;
-
   column-gap: 1rem;
   margin-bottom: 2rem;
-
 }
 
 .review__item img {
@@ -92,6 +84,7 @@
   border-radius: 50px;
   object-fit: cover;
 }
+
 .user__reviews {
   margin-top: 2.5rem;
 }
@@ -102,18 +95,51 @@
 }
 
 .review__item p {
-  font-size: .9rem;
+  font-size: 0.9rem;
   color: var(--text-color);
 }
+
 .review__item h6 {
   font-size: 1.1rem;
   color: var(--text-color);
 }
+
 .review__item span i {
   font-size: 1.2rem;
   color: var(--secondary-color);
-
 }
+
 .review__item span {
   font-weight: 500;
+}
+
+/* ✅ Bổ sung layout hiển thị tour rõ ràng đẹp */
+.tour__extra-details {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 1rem;
+  column-gap: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tour__extra-details span {
+  flex: 0 0 48%; /* 2 cột ngang hàng */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.tour__extra-details span i {
+  color: var(--heading-color);
+  font-size: 1.2rem;
+}
+
+/* ✅ Responsive cho mobile */
+@media (max-width: 576px) {
+  .tour__extra-details span {
+    flex: 0 0 100%;
+  }
 }

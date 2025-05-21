@@ -1,78 +1,128 @@
 import Chat from '../models/Chat.js';
 import User from '../models/User.js';
 
-// 👇 Gán _id thật của admin tại đây
-const ADMIN_ID = "6803343a6c0047c5fa9b60c6"; // ✅ thay cho "admin"
-
-// Gửi tin nhắn (cả admin và user)
+// Gửi tin nhắn vào phòng chat (chatRoomId)
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user.id;
-    const { receiverId, text } = req.body;
+    const { chatRoomId, text } = req.body;
 
-    if (!text?.trim()) {
-      return res.status(400).json({ success: false, message: "Tin nhắn rỗng!" });
+    if (!text?.trim() || !chatRoomId) {
+      return res.status(400).json({ success: false, message: "Thiếu chatRoomId hoặc tin nhắn trống" });
     }
 
-    const newMessage = new Chat({ senderId, receiverId, text });
+    const newMessage = new Chat({
+      senderId,
+      chatRoomId,
+      text,
+      createdAt: new Date()
+    });
+
     const saved = await newMessage.save();
 
-    res.status(200).json({ success: true, data: saved });
+    // Lấy thông tin sender (role + username)
+    const senderUser = await User.findById(senderId).select("role username");
+
+    const result = {
+      ...saved._doc,
+      senderRole: senderUser?.role || "user",
+      senderName: senderUser?.username || "Người dùng"
+    };
+
+    res.status(200).json({ success: true, data: result });
   } catch (err) {
+    console.error("Lỗi gửi tin nhắn:", err);
     res.status(500).json({ success: false, message: "Lỗi gửi tin nhắn" });
   }
 };
 
-// Lịch sử chat của user đang đăng nhập với admin
-export const getMessages = async (req, res) => {
+// Lấy lịch sử chat trong phòng chat theo chatRoomId, kèm thông tin role + username sender
+export const getMessagesByRoom = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { chatRoomId } = req.params;
 
-    const messages = await Chat.find({
-      $or: [
-        { senderId: userId, receiverId: ADMIN_ID },
-        { senderId: ADMIN_ID, receiverId: userId }
-      ]
-    }).sort({ createdAt: 1 });
+    if (!chatRoomId) {
+      return res.status(400).json({ success: false, message: "chatRoomId là bắt buộc" });
+    }
 
-    res.status(200).json({ success: true, data: messages });
+    const messages = await Chat.find({ chatRoomId })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const senderIds = [...new Set(messages.map(m => m.senderId))];
+
+    const users = await User.find({ _id: { $in: senderIds } }).select("role username");
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u._id.toString()] = { role: u.role, name: u.username };
+    });
+
+    const messagesWithInfo = messages.map(msg => ({
+      ...msg,
+      senderRole: userMap[msg.senderId.toString()]?.role || "user",
+      senderName: userMap[msg.senderId.toString()]?.name || "Người dùng"
+    }));
+
+    res.status(200).json({ success: true, data: messagesWithInfo });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Không thể lấy tin nhắn" });
+    console.error("Lỗi lấy lịch sử chat:", err);
+    res.status(500).json({ success: false, message: "Không thể lấy lịch sử chat" });
   }
 };
 
-// Lấy danh sách người dùng đã gửi tin nhắn tới admin
-export const getChatUsers = async (req, res) => {
+// Lấy danh sách chatRoom (danh sách user đã từng chat) cho admin
+export const getChatRoomsForAdmin = async (req, res) => {
   try {
-    const senderIds = await Chat.distinct("senderId", { receiverId: ADMIN_ID });
+    const chatRooms = await Chat.aggregate([
+      { $group: { _id: "$chatRoomId" } },
+      {
+        $lookup: {
+          from: "users",                     // 👈 tên collection trong MongoDB
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      {
+        $unwind: {
+          path: "$user",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          user: {
+            username: "$user.username",
+            email: "$user.email"
+          }
+        }
+      },
+{ $sort: { _id: -1 } }
+    ]);
 
-    // Lọc ra những ID khác ADMIN_ID (tránh lỗi khi admin gửi trước)
-    const validUserIds = senderIds.filter(id => String(id) !== ADMIN_ID);
-
-    const users = await User.find({ _id: { $in: validUserIds } }).select("fullName email");
-
-    res.status(200).json({ success: true, data: users });
+    res.status(200).json({ success: true, data: chatRooms });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi lấy danh sách người dùng chat" });
+    console.error("Lỗi lấy danh sách chatRoom:", err);
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách chatRoom" });
   }
 };
 
-// Admin lấy lịch sử với user cụ thể
-export const getMessagesWithUser = async (req, res) => {
+
+// Lấy thông tin user theo chatRoomId (chatRoomId == userId)
+export const getUserInfoByChatRoomId = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const adminId = req.user.id;
+    const { chatRoomId } = req.params;
 
-    const messages = await Chat.find({
-      $or: [
-        { senderId: adminId, receiverId: userId },
-        { senderId: userId, receiverId: adminId }
-      ]
-    }).sort({ createdAt: 1 });
+    const user = await User.findById(chatRoomId).select("username email");
 
-    res.status(200).json({ success: true, data: messages });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User không tồn tại" });
+    }
+
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
-    console.error("❌ Lỗi khi lấy tin nhắn với user:", err.message);
-    res.status(500).json({ message: "Không thể lấy tin nhắn" });
+    console.error("Lỗi lấy thông tin user:", err);
+    res.status(500).json({ success: false, message: "Lỗi lấy thông tin user" });
   }
 };

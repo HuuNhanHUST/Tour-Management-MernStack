@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, useCallback } from "react";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
@@ -12,10 +12,9 @@ const ChatPopup = () => {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [hasNewMessage, setHasNewMessage] = useState(false);
-  const bottomRef = useRef(null);
 
-  // ✅ ID thực của admin từ database
-  const ADMIN_ID = "6803343a6c0047c5fa9b60c6";
+  const bottomRef = useRef(null);
+  const chatRoomId = user?._id;
 
   const formatTime = (isoString) => {
     const date = new Date(isoString);
@@ -28,67 +27,63 @@ const ChatPopup = () => {
   };
 
   useEffect(() => {
+    if (!open || !user) return;
+
     const fetchMessages = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/v1/chat/history", {
-          withCredentials: true,
-        });
-        if (res.data?.data) setChat(res.data.data);
+        const res = await axios.get(`http://localhost:4000/api/v1/chat/history/${chatRoomId}`, { withCredentials: true });
+        setChat(res.data.data || []);
       } catch (err) {
-        console.error("❌ Lỗi lấy lịch sử:", err.message);
+        console.error("Lỗi lấy lịch sử chat:", err.message);
       }
     };
 
-    if (open && user) fetchMessages();
-  }, [open, user]);
+    fetchMessages();
+  }, [open, user, chatRoomId]);
+
+  const handleReceiveMessage = useCallback(
+    (msg) => {
+      if (msg.chatRoomId === chatRoomId) {
+        setChat((prev) => [...prev, msg]);
+        if (!open) setHasNewMessage(true);
+      }
+    },
+    [chatRoomId, open]
+  );
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    socket.emit("joinRoom", chatRoomId);
+    socket.on("receiveMessage", handleReceiveMessage);
+
+    return () => {
+      socket.off("receiveMessage", handleReceiveMessage);
+    };
+  }, [socket, user, chatRoomId, handleReceiveMessage]);
 
   const handleSend = async () => {
-    if (!socket || !message.trim()) return;
+    if (!message.trim()) return;
 
-    const msg = {
-      senderId: user._id,
-      receiverId: ADMIN_ID,
+    const newMsg = {
+      chatRoomId,
       text: message,
-      createdAt: new Date(),
     };
 
-    socket.emit("sendMessage", msg);
-    setChat((prev) => [...prev, msg]);
-    setMessage("");
-
     try {
-      await axios.post(
-        "http://localhost:4000/api/v1/chat/send",
-        { receiverId: ADMIN_ID, text: msg.text },
-        { withCredentials: true }
-      );
+      const res = await axios.post("http://localhost:4000/api/v1/chat/send", newMsg, { withCredentials: true });
+      const savedMessage = res.data.data;
+      setChat((prev) => [...prev, savedMessage]);
+      socket.emit("sendMessage", savedMessage);
+      setMessage("");
     } catch (err) {
-      console.error("❌ Lỗi lưu tin nhắn:", err.message);
+      console.error("Lỗi lưu tin nhắn:", err.message);
     }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
   };
-
-  useEffect(() => {
-    if (!socket || !user) return;
-
-    socket.emit("addUser", user._id);
-
-    socket.on("receiveMessage", (msg) => {
-      const isRelated =
-        (String(msg.senderId) === ADMIN_ID && String(msg.receiverId) === String(user._id)) ||
-        (String(msg.senderId) === String(user._id) && String(msg.receiverId) === ADMIN_ID);
-
-      if (isRelated) {
-        setChat((prev) => [...prev, msg]);
-        if (!open) setHasNewMessage(true);
-      }
-    });
-
-    return () => socket.off("receiveMessage");
-  }, [socket, user, open]);
 
   useEffect(() => {
     if (open) setHasNewMessage(false);
@@ -104,24 +99,33 @@ const ChatPopup = () => {
     <div className="chat-popup-wrapper">
       {open ? (
         <div className="chat-box shadow">
-          <div className="chat-header bg-primary text-white d-flex justify-content-between p-2">
-<span>💬 Hỗ trợ trực tuyến</span>
-            <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>✖</button>
+          <div className="chat-header bg-primary text-white d-flex justify-content-between align-items-center p-2">
+            <span>💬 Hỗ trợ trực tuyến</span>
+            <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>
+✖
+            </button>
           </div>
+
           <div className="chat-body">
-            {chat.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`chat-message ${String(msg.senderId) === String(user._id) ? "me" : "you"}`}
-              >
-                <div className="chat-bubble">
-                  {msg.text}
-                  <div className="msg-time">{formatTime(msg.createdAt)}</div>
+            {chat.map((msg, idx) => {
+              const isMe = String(msg.senderId) === String(user._id);
+              const isAdmin = msg.senderRole === "admin";
+
+              return (
+                <div key={idx} className={`chat-message ${isMe ? "me" : isAdmin ? "admin" : "you"}`}>
+                  <div className="sender-name" style={{ fontWeight: "bold", fontSize: "0.85rem", marginBottom: "3px" }}>
+                    {isMe ? "Bạn" : isAdmin ? "Admin" : "Khách"}
+                  </div>
+                  <div className="chat-bubble">
+                    {msg.text}
+                    <div className="msg-time">{formatTime(msg.createdAt)}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={bottomRef}></div>
           </div>
+
           <div className="chat-input d-flex">
             <input
               type="text"
@@ -131,7 +135,9 @@ const ChatPopup = () => {
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyPress}
             />
-            <button className="btn btn-primary" onClick={handleSend}>Gửi</button>
+            <button className="btn btn-primary" onClick={handleSend}>
+              Gửi
+            </button>
           </div>
         </div>
       ) : (

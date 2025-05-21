@@ -26,10 +26,8 @@ const UserList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🔍 Log debug
   console.log("🔁 UserList re-render");
 
-  // ✅ Gọi API lấy danh sách user (chặn setState nếu dữ liệu giống nhau)
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -38,11 +36,9 @@ const UserList = () => {
       });
 
       const newUsers = res.data.data || [];
-      setUsers((prevUsers) => {
-        const isSame =
-          JSON.stringify(prevUsers) === JSON.stringify(newUsers);
-        return isSame ? prevUsers : newUsers;
-      });
+      console.log("Fetched users:", newUsers);
+
+      setUsers(newUsers);
     } catch (err) {
       console.error("❌ Lỗi fetch users:", err.message);
       setError("Không thể tải danh sách người dùng");
@@ -52,6 +48,7 @@ const UserList = () => {
   }, []);
 
   useEffect(() => {
+    console.log("useEffect fetchUsers chạy");
     fetchUsers();
   }, [fetchUsers]);
 

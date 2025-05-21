@@ -14,7 +14,9 @@ export const createTour = async (req, res) => {
       desc,
       price,
       maxGroupSize,
-      featured
+      featured,
+      startDate, // ✅ ngày đi
+      endDate     // ✅ ngày về
     } = req.body;
 
     const newTour = new Tour({
@@ -26,6 +28,8 @@ export const createTour = async (req, res) => {
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
       featured: featured === "true" || featured === true,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
       photo: req.file?.filename || ""
     });
 
@@ -45,7 +49,7 @@ export const createTour = async (req, res) => {
   }
 };
 
-// ✅ Cập nhật Tour (cho phép kèm ảnh hoặc không)
+// ✅ Cập nhật Tour
 export const updateTour = async (req, res) => {
   const id = req.params.id;
 
@@ -59,7 +63,9 @@ export const updateTour = async (req, res) => {
       price,
       maxGroupSize,
       featured,
-      photo // ảnh cũ nếu không upload mới
+      photo, // ảnh cũ nếu không upload mới
+      startDate,
+      endDate
     } = req.body;
 
     const updatedData = {
@@ -71,7 +77,9 @@ export const updateTour = async (req, res) => {
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
       featured: featured === "true" || featured === true,
-      photo: req.file?.filename || photo, // dùng ảnh mới nếu có, không thì giữ ảnh cũ
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      photo: req.file?.filename || photo,
     };
 
     const updatedTour = await Tour.findByIdAndUpdate(

@@ -12,7 +12,16 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 
 const Booking = ({ tour, avgRating }) => {
-  const { price, reviews, title } = tour;
+  const {
+    price,
+    reviews,
+    title,
+    startDate,
+    endDate,
+    maxGroupSize,
+    currentBookings
+  } = tour;
+
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
@@ -22,8 +31,10 @@ const Booking = ({ tour, avgRating }) => {
     fullName: "",
     phone: "",
     guestSize: 1,
-    bookAt: ""
   });
+
+  const availableSlots = maxGroupSize - currentBookings;
+  const isTourExpired = new Date() > new Date(endDate);
 
   const handleChange = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
@@ -36,50 +47,79 @@ const Booking = ({ tour, avgRating }) => {
   const handerClick = (e) => {
     e.preventDefault();
 
-    // ✅ Nếu chưa đăng nhập thì không cho đặt tour
     if (!user) {
       alert("Vui lòng đăng nhập để đặt tour!");
       navigate("/login");
       return;
     }
 
+    if (isTourExpired) {
+      alert("Tour này đã kết thúc. Không thể đặt nữa.");
+      return;
+    }
+
+    if (credentials.guestSize <= 0) {
+      alert("Số lượng người phải lớn hơn 0.");
+      return;
+    }
+
+    if (credentials.guestSize > availableSlots) {
+      alert(`Chỉ còn lại ${availableSlots} chỗ trống.`);
+      return;
+    }
+
     navigate("/thank-you");
   };
 
- const handleMomoPayment = async () => {
-  if (!user) {
-    alert("Vui lòng đăng nhập để thanh toán!");
-    navigate("/login");
-    return;
-  }
-
-  const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
-
-  try {
-    const response = await axios.post("http://localhost:4000/api/v1/payment/momo", {
-      amount: validAmount,
-      orderId: `ORDER_${Date.now()}`,
-      orderInfo: `Thanh toán tour: ${title}`,
-      userId: user._id,
-      email: user.email,                          // ✅ Gửi email
-      tourId: tour._id,                           // ✅ Tour ID
-      tourName: tour.title,                       // ✅ Tour name
-      fullName: credentials.fullName,             // ✅ Tên khách
-      phone: credentials.phone,                   // ✅ SĐT
-      quantity: credentials.guestSize             // ✅ Số lượng người
-    });
-
-    if (response.data && response.data.payUrl) {
-      window.location.href = response.data.payUrl;
-    } else {
-      alert("Không thể tạo thanh toán MoMo.");
+  const handleMomoPayment = async () => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để thanh toán!");
+      navigate("/login");
+      return;
     }
-  } catch (error) {
-    console.error("❌ Lỗi gọi MoMo:", error?.response?.data || error.message);
-    alert("Thanh toán thất bại.");
-  }
-};
 
+    if (isTourExpired) {
+      alert("Tour đã kết thúc. Không thể thanh toán.");
+      return;
+    }
+
+    if (credentials.guestSize <= 0) {
+      alert("Số lượng người phải lớn hơn 0.");
+      return;
+    }
+
+    if (credentials.guestSize > availableSlots) {
+      alert(`Chỉ còn lại ${availableSlots} chỗ trống.`);
+      return;
+    }
+
+    const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
+
+    try {
+      const response = await axios.post("http://localhost:4000/api/v1/payment/momo", {
+        amount: validAmount,
+        orderId: `ORDER_${Date.now()}`,
+        orderInfo: `Thanh toán tour: ${title}`,
+        userId: user._id,
+        email: user.email,
+        tourId: tour._id,
+        tourName: tour.title,
+        fullName: credentials.fullName,
+        phone: credentials.phone,
+        quantity: credentials.guestSize,
+        departureDate: startDate
+      });
+
+      if (response.data && response.data.payUrl) {
+        window.location.href = response.data.payUrl;
+      } else {
+        alert("Không thể tạo thanh toán MoMo.");
+      }
+    } catch (error) {
+      console.error("❌ Lỗi gọi MoMo:", error?.response?.data || error.message);
+      alert("Thanh toán thất bại.");
+    }
+  };
 
   return (
     <div className="booking">
@@ -90,18 +130,30 @@ const Booking = ({ tour, avgRating }) => {
         </h3>
         <span className="tour__rating d-flex align-items-center">
           <i className="ri-star-line"></i>
-          {avgRating === 0 ? "Chưa có đánh giá nào" : avgRating}(
-          {reviews?.length})
+          {avgRating === 0 ? "Chưa có đánh giá nào" : avgRating}({reviews?.length})
         </span>
       </div>
 
       <div className="booking__form">
-        <h5>Information</h5>
+        <h5>Thông tin đặt tour</h5>
+
+        {isTourExpired && (
+          <p className="text-danger fw-bold">❌ Tour này đã kết thúc.</p>
+        )}
+
+        {availableSlots <= 0 && (
+          <p className="text-danger fw-bold">❌ Tour đã hết chỗ.</p>
+        )}
+
+        {availableSlots > 0 && !isTourExpired && (
+          <p className="text-success fw-bold">✅ Còn lại: {availableSlots} chỗ</p>
+        )}
+
         <Form className="booking__info-form" onSubmit={handerClick}>
           <FormGroup>
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder="Họ tên"
               id="fullName"
               required
               onChange={handleChange}
@@ -110,23 +162,26 @@ const Booking = ({ tour, avgRating }) => {
           <FormGroup>
             <input
               type="number"
-              placeholder="Phone"
+              placeholder="Số điện thoại"
               id="phone"
               required
               onChange={handleChange}
             />
           </FormGroup>
-          <FormGroup className="d-flex align-items-center gap-3">
-            <input
-              type="date"
-              id="bookAt"
-              required
-              onChange={handleChange}
-            />
+
+          <FormGroup>
+            <p><strong>Ngày đi:</strong> {startDate ? new Date(startDate).toLocaleDateString("vi-VN") : "-"}</p>
+            <p><strong>Ngày về:</strong> {endDate ? new Date(endDate).toLocaleDateString("vi-VN") : "-"}</p>
+          </FormGroup>
+
+          <FormGroup>
             <input
               type="number"
-              placeholder="Guest"
+              placeholder="Số lượng người"
               id="guestSize"
+              min="1"
+              max={availableSlots}
+              value={credentials.guestSize}
               required
               onChange={handleChange}
             />
@@ -138,29 +193,33 @@ const Booking = ({ tour, avgRating }) => {
         <ListGroup>
           <ListGroupItem className="border-0 px-0">
             <h5 className="d-flex align-items-center gap-1">
-              ${price}
-              <i className="ri-close-line"></i> 1 Người
+              ${price} <i className="ri-close-line"></i> {credentials.guestSize} Người
             </h5>
-            <span>${price}</span>
+            <span>${price * credentials.guestSize}</span>
           </ListGroupItem>
           <ListGroupItem className="border-0 px-0">
-            <h5>Service charge</h5>
+            <h5>Phí dịch vụ</h5>
             <span>${serviceFee}</span>
           </ListGroupItem>
           <ListGroupItem className="border-0 px-0 total">
-            <h5>ToTal</h5>
+            <h5>Tổng cộng</h5>
             <span>${totalAmount}</span>
           </ListGroupItem>
         </ListGroup>
 
-        <Button className="btn primary__btn w-100 mt-4" onClick={handerClick}>
-          Đặt NgayNgay
+        <Button
+          className="btn primary__btn w-100 mt-4"
+          onClick={handerClick}
+          disabled={isTourExpired || availableSlots <= 0}
+        >
+          Đặt Ngay
         </Button>
 
         <Button
           type="button"
           className="btn btn-danger w-100 mt-3"
           onClick={handleMomoPayment}
+          disabled={isTourExpired || availableSlots <= 0}
         >
           Thanh toán qua MoMo
         </Button>

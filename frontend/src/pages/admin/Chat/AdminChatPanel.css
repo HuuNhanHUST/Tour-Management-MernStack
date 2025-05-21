@@ -87,30 +87,58 @@
   display: flex;
 }
 
+/* Tin nhắn admin chính (chính admin đang login) - bên phải */
 .message-row.admin {
   justify-content: flex-end;
 }
 
+/* Tin nhắn admin khác - cũng bên phải, khác màu để phân biệt */
+.message-row.admin-other {
+  justify-content: flex-end;
+}
+
+/* Tin nhắn user (khách) - bên trái */
 .message-row.user {
   justify-content: flex-start;
 }
 
+/* Bong bóng tin nhắn */
 .message-bubble {
   max-width: 60%;
   padding: 10px 14px;
   border-radius: 18px;
   font-size: 14px;
   line-height: 1.4;
-  background-color: #0084ff;
-  color: white;
   word-break: break-word;
   border-bottom-right-radius: 4px;
 }
 
+/* Style riêng admin chính */
+.message-row.admin .message-bubble {
+  background-color: #0084ff;
+  color: white;
+}
+
+/* Style riêng admin khác */
+.message-row.admin-other .message-bubble {
+  background-color: #0056b3;
+  color: white;
+  font-style: italic;
+}
+
+/* Style tin nhắn user */
 .message-row.user .message-bubble {
   background-color: #e5e5ea;
   color: black;
   border-bottom-left-radius: 4px;
+}
+
+/* === Tên người gửi phía trên bong bóng tin nhắn === */
+.sender-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  color: #333;
 }
 
 /* === Thời gian gửi === */
@@ -139,7 +167,7 @@
 
 .chat-input-area button {
   padding: 10px 16px;
-  background-color: #0084ff;
+background-color: #0084ff;
   color: white;
   border: none;
   border-radius: 20px;

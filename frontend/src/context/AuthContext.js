@@ -73,16 +73,15 @@ export const AuthContextProvider = ({ children }) => {
     }
   }, [state.user]);
 
-  // ✅ Dùng useMemo để tránh tạo object mới mỗi lần re-render
+  // Chỉ memo các giá trị state, không đưa dispatch vào
   const contextValue = useMemo(() => ({
     user: state.user,
     loading: state.loading,
     error: state.error,
-    dispatch,
   }), [state.user, state.loading, state.error]);
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={{ ...contextValue, dispatch }}>
       {children}
     </AuthContext.Provider>
   );

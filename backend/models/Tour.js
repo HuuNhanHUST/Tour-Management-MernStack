@@ -36,6 +36,25 @@ const tourSchema = new mongoose.Schema(
       required: true,
     },
 
+    // ✅ Ngày khởi hành
+    startDate: {
+      type: Date,
+      required: true,
+    },
+
+    // ✅ Ngày kết thúc
+    endDate: {
+      type: Date,
+      required: true,
+    },
+
+    // ✅ Số lượng người đã đặt
+    currentBookings: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
+
     reviews: [
       {
         type: mongoose.Types.ObjectId,

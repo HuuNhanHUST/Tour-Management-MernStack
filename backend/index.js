@@ -27,50 +27,44 @@ const port = process.env.PORT || 4000;
 // ✅ Tạo HTTP Server để tích hợp Socket.IO
 const server = http.createServer(app);
 
-// Tạo socket server
+// Tạo socket server với CORS cho frontend
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // hoặc domain FE
+    origin: "http://localhost:3000", // hoặc domain frontend
     credentials: true,
   },
 });
 
-// ✅ Lưu người dùng đang online
+// Map lưu trữ người dùng online (tuỳ chọn)
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log("🟢 New socket connected:", socket.id);
 
-  // ✅ Lưu người dùng đang online (dùng string key)
-socket.on("addUser", (userId) => {
-  if (userId) {
-    onlineUsers.set(userId.toString(), socket.id); // 🟢 convert key thành string
-    console.log("✅ addUser:", userId.toString(), "→", socket.id);
-  }
-});
+  // Join room chatRoomId (userId)
+  socket.on("joinRoom", (chatRoomId) => {
+    socket.join(chatRoomId);
+    console.log(`✅ Socket ${socket.id} joined room ${chatRoomId}`);
+    onlineUsers.set(chatRoomId.toString(), socket.id);
+  });
 
-// ✅ Nhận tin nhắn từ client và chuyển cho người nhận
-socket.on("sendMessage", (message) => {
-  const { senderId, receiverId, text } = message;
-  const receiverSocketId = onlineUsers.get(receiverId.toString()); // 🟢 dùng toString
+  // Nhận tin nhắn từ client và phát tới room (ngoại trừ socket gửi)
+  socket.on("sendMessage", (message) => {
+    const { chatRoomId, senderId, text } = message;
+    console.log(`📩 Message in room ${chatRoomId} from ${senderId}: ${text}`);
 
-  console.log("📩 Message:", { from: senderId, to: receiverId, text });
-  console.log("🧭 onlineUsers:", [...onlineUsers.entries()]);
+    // Phát cho tất cả trong room ngoại trừ socket gửi
+    socket.to(chatRoomId).emit("receiveMessage", message);
+  });
 
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("receiveMessage", message);
-    console.log("✅ Đã gửi tới socket:", receiverSocketId);
-  } else {
-    console.log("❌ Người nhận chưa online:", receiverId);
-  }
-});
-
-
+  // Xử lý ngắt kết nối
   socket.on("disconnect", () => {
-    for (const [userId, sockId] of onlineUsers.entries()) {
-      if (sockId === socket.id) {
-        onlineUsers.delete(userId);
-        console.log("🔴 Disconnected:", userId);
+    console.log("🔴 Socket disconnected:", socket.id);
+    // Xoá user khỏi danh sách online
+    for (const [key, value] of onlineUsers.entries()) {
+      if (value === socket.id) {
+        onlineUsers.delete(key);
+        console.log(`❌ Removed user ${key} from onlineUsers`);
         break;
       }
     }

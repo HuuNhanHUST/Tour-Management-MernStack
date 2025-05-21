@@ -2,12 +2,13 @@ import mongoose from "mongoose";
 
 const chatSchema = new mongoose.Schema({
   senderId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,  // ✅ dùng ObjectId
     ref: "User",
     required: true,
   },
-  receiverId: {
-    type: String, // hoặc ObjectId nếu admin cũng lưu trong User
+  chatRoomId: {
+    type: mongoose.Schema.Types.ObjectId,  // ✅ dùng ObjectId
+    ref: "User",
     required: true,
   },
   text: {

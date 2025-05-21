@@ -21,7 +21,6 @@ const TourDetails = () => {
   const { totalRating, avgRating } = caculateAvgRating(tour?.reviews || []);
   const options = { day: 'numeric', month: 'long', year: 'numeric' };
 
-  // Khi load tour xong → check user đã review chưa
   useEffect(() => {
     if (tour && user) {
       const existing = tour.reviews?.find(r => r.username === user.username);
@@ -35,47 +34,26 @@ const TourDetails = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault();
-
     const reviewText = reviewMsgRef.current.value;
 
-    if (!user) {
-      alert('Vui lòng đăng nhập để đánh giá!');
-      return;
-    }
+    if (!user) return alert('Vui lòng đăng nhập để đánh giá!');
+    if (!tourRating) return alert('Vui lòng chọn số sao!');
 
-    if (!tourRating) {
-      alert('Vui lòng chọn số sao!');
-      return;
-    }
-
-    const reviewObj = {
-      reviewText,
-      rating: tourRating
-    };
+    const reviewObj = { reviewText, rating: tourRating };
 
     try {
       const res = await fetch(`${BASE_URL}/review/${id}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(reviewObj)
       });
 
       const result = await res.json();
-
-      if (!res.ok) {
-        console.error("❌ Server response:", result);
-        alert(result.message || "Gửi đánh giá thất bại!");
-        return;
-      }
-
+      if (!res.ok) return alert(result.message || "Gửi đánh giá thất bại!");
       alert(userReview ? "✅ Cập nhật đánh giá thành công!" : "✅ Gửi đánh giá thành công!");
       window.location.reload();
-
     } catch (err) {
-      console.error("❌ Fetch error:", err);
       alert("Đã có lỗi xảy ra khi gửi đánh giá.");
     }
   };
@@ -87,13 +65,16 @@ const TourDetails = () => {
   if (loading) return <h4 className="text-center pt-5">Đang tải dữ liệu...</h4>;
   if (error || !tour) return <h4 className="text-center pt-5">Không tìm thấy tour</h4>;
 
-  const { photo, title, desc, price, address, reviews, city, distance, maxGroupSize } = tour;
+  const {
+    photo, title, desc, price, address, reviews, city, distance,
+    maxGroupSize, currentBookings, startDate, endDate
+  } = tour;
 
-  // ✅ Xử lý ảnh (cả local public, uploads, link online)
+  const availableSlots = maxGroupSize - currentBookings;
+  const isTourExpired = new Date() > new Date(endDate);
+
   const imageURL =
-    photo?.startsWith("http") ||
-    photo?.startsWith("data:") ||
-    photo?.startsWith("/tour-images")
+    photo?.startsWith("http") || photo?.startsWith("data:") || photo?.startsWith("/tour-images")
       ? photo
       : `http://localhost:4000/uploads/${photo}`;
 
@@ -119,13 +100,21 @@ const TourDetails = () => {
                   </div>
 
                   <div className="tour__extra-details">
-                    <span><i className="ri-map-pin-2-line"></i>{city}</span>
-                    <span><i className="ri-money-dollar-circle-line"></i>${price}/người</span>
-                    <span><i className="ri-map-pin-time-line"></i>{distance} km</span>
-                    <span><i className="ri-group-line"></i>{maxGroupSize} người</span>
+                    <span><i className="ri-map-pin-2-line"></i><strong>Thành phố:</strong> {city}</span>
+                    <span><i className="ri-money-dollar-circle-line"></i><strong>Giá:</strong> ${price}/người</span>
+                    <span><i className="ri-map-pin-time-line"></i><strong>Khoảng cách:</strong> {distance} km</span>
+                    <span><i className="ri-group-line"></i><strong>Sức chứa:</strong> {maxGroupSize} người</span>
+                    <span><i className="ri-group-line"></i><strong>Đã đặt:</strong> {currentBookings} người</span>
+                    <span><i className="ri-group-line"></i><strong>Còn lại:</strong> {availableSlots > 0 ? `${availableSlots} người` : "❌ Hết chỗ"}</span>
+                    <span><i className="ri-calendar-todo-line"></i><strong>Ngày đi:</strong> {startDate ? new Date(startDate).toLocaleDateString('vi-VN') : "-"}</span>
+                    <span><i className="ri-calendar-check-line"></i><strong>Ngày về:</strong> {endDate ? new Date(endDate).toLocaleDateString('vi-VN') : "-"}</span>
                   </div>
 
-                  <h5>Mô tả</h5>
+                  {isTourExpired && (
+                    <p className="text-danger fw-bold mt-3">❌ Tour này đã kết thúc. Bạn không thể đặt nữa.</p>
+                  )}
+
+                  <h5 className="mt-4">Mô tả</h5>
                   <p>{desc}</p>
                 </div>
 

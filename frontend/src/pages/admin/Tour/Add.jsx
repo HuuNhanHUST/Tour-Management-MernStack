@@ -13,14 +13,15 @@ const AddTour = () => {
     price: "",
     maxGroupSize: "",
     featured: false,
+    startDate: "",     // ✅ Ngày đi
+    endDate: "",       // ✅ Ngày về
   });
 
   const [imageFile, setImageFile] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null); // ✅ ảnh xem trước
+  const [previewImage, setPreviewImage] = useState(null);
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-
     let newValue = value;
 
     if (type === "text" && ["distance", "price", "maxGroupSize"].includes(name)) {
@@ -38,7 +39,7 @@ const AddTour = () => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      setPreviewImage(URL.createObjectURL(file)); // ✅ tạo ảnh preview
+      setPreviewImage(URL.createObjectURL(file));
     }
   };
 
@@ -46,17 +47,13 @@ const AddTour = () => {
     e.preventDefault();
     try {
       const formData = new FormData();
-
       for (const key in tour) {
         formData.append(key, tour[key]);
       }
-
       formData.append("photo", imageFile);
 
       await axios.post("http://localhost:4000/api/v1/tour", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
 
@@ -72,6 +69,7 @@ const AddTour = () => {
     <div>
       <h3>➕ Thêm Tour mới</h3>
       <form onSubmit={handleSubmit} className="mt-4 row g-3">
+        {/* Các trường khác giữ nguyên */}
         <div className="col-md-6">
           <label className="form-label">Tên tour</label>
           <input
@@ -147,6 +145,32 @@ const AddTour = () => {
             required
             inputMode="numeric"
             pattern="[0-9]*"
+          />
+        </div>
+
+        {/* ✅ Ngày đi */}
+        <div className="col-md-6">
+          <label className="form-label">Ngày đi</label>
+          <input
+            type="date"
+            className="form-control"
+            name="startDate"
+            value={tour.startDate}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {/* ✅ Ngày về */}
+        <div className="col-md-6">
+          <label className="form-label">Ngày về</label>
+          <input
+            type="date"
+            className="form-control"
+            name="endDate"
+            value={tour.endDate}
+            onChange={handleChange}
+            required
           />
         </div>
 

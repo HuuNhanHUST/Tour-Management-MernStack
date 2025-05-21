@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 
 import Payment from '../models/Payment.js';
 import Booking from '../models/Booking.js';
+import Tour from '../models/Tour.js';
 import User from '../models/User.js';
 import { io } from '../index.js';
 import { sendSuccessEmail } from '../utils/emailSender.js';
@@ -14,78 +15,103 @@ import { sendSuccessEmail } from '../utils/emailSender.js';
 dotenv.config();
 const router = express.Router();
 
-// Gửi yêu cầu thanh toán MoMo
+router.all('*', (req, res, next) => {
+  console.log("📢 Đã truy cập:", req.method, req.originalUrl);
+  next();
+});
+
+
+// ✅ Gửi yêu cầu thanh toán MoMo
 router.post('/momo', async (req, res) => {
-  const { amount, orderId, orderInfo, userId, tourId, quantity, email } = req.body;
-
-  const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
-  const rawAmount = amount.toString();
-
-  const rawSignature =
-    `partnerCode=${process.env.MOMO_PARTNER_CODE}&accessKey=${process.env.MOMO_ACCESS_KEY}&requestId=${requestId}` +
-    `&amount=${rawAmount}&orderId=${orderId}&orderInfo=${orderInfo}` +
-    `&returnUrl=${process.env.MOMO_RETURN_URL}&notifyUrl=${process.env.MOMO_NOTIFY_URL}&extraData=`;
-
-  const signature = crypto.createHmac('sha256', process.env.MOMO_SECRET_KEY)
-    .update(rawSignature)
-    .digest('hex');
-
-  const requestBody = {
-    partnerCode: process.env.MOMO_PARTNER_CODE,
-    accessKey: process.env.MOMO_ACCESS_KEY,
-    requestId,
-    amount: rawAmount,
-    orderId,
-    orderInfo,
-    returnUrl: process.env.MOMO_RETURN_URL,
-    notifyUrl: process.env.MOMO_NOTIFY_URL,
-    extraData: '',
-    requestType: process.env.MOMO_REQUEST_TYPE,
-    signature,
-    lang: 'vi'
-  };
+  const  { amount, orderId, orderInfo, userId, tourId, quantity, email, fullName, phone, tourName }  = req.body;
 
   try {
+    const tour = await Tour.findById(tourId);
+    if (!tour) return res.status(404).json({ message: "Tour không tồn tại" });
+
+    const pendingPayments = await Payment.aggregate([
+      {
+        $match: {
+          tourId: new mongoose.Types.ObjectId(tourId),
+          status: "Pending"
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalPending: { $sum: "$quantity" }
+        }
+      }
+    ]);
+    const pendingQuantity = pendingPayments[0]?.totalPending || 0;
+    const availableSlots = tour.maxGroupSize - tour.currentBookings - pendingQuantity;
+
+    if (quantity > availableSlots) {
+      return res.status(400).json({
+        message: `Tour đã hết chỗ hoặc chỉ còn lại ${availableSlots} chỗ do đang chờ thanh toán.`
+      });
+    }
+
+    const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
+    const rawAmount = amount.toString();
+    const rawSignature =
+      `partnerCode=${process.env.MOMO_PARTNER_CODE}&accessKey=${process.env.MOMO_ACCESS_KEY}&requestId=${requestId}` +
+      `&amount=${rawAmount}&orderId=${orderId}&orderInfo=${orderInfo}` +
+      `&returnUrl=${process.env.MOMO_RETURN_URL}&notifyUrl=${process.env.MOMO_NOTIFY_URL}&extraData=`;
+
+    const signature = crypto.createHmac('sha256', process.env.MOMO_SECRET_KEY)
+      .update(rawSignature)
+      .digest('hex');
+
+    const requestBody = {
+      partnerCode: process.env.MOMO_PARTNER_CODE,
+      accessKey: process.env.MOMO_ACCESS_KEY,
+      requestId,
+      amount: rawAmount,
+      orderId,
+      orderInfo,
+      returnUrl: process.env.MOMO_RETURN_URL,
+      notifyUrl: process.env.MOMO_NOTIFY_URL,
+      extraData: '',
+      requestType: process.env.MOMO_REQUEST_TYPE,
+      signature,
+      lang: 'vi'
+    };
+
     const momoRes = await axios.post(process.env.MOMO_API_URL, requestBody);
     console.log("✅ MoMo response:", momoRes.data);
 
-    // 🔎 Nếu không truyền email, fallback từ userId
     let finalEmail = email;
     if (!finalEmail) {
       const user = await User.findById(userId);
       finalEmail = user?.email || "";
     }
 
-    console.log("📨 Email sẽ lưu:", finalEmail);
-
     await Payment.create({
-  userId: new mongoose.Types.ObjectId(userId),
-  userEmail: finalEmail,
-  tourId,
-  quantity,
-  orderId,
-  amount,
-  status: 'Pending',
-  payType: 'MoMo',
-
-  // 🔥 Thêm các trường này nếu frontend truyền
-  tourName: req.body.tourName,
-  fullName: req.body.fullName,
-  phone: req.body.phone
-});
+      userId: new mongoose.Types.ObjectId(userId),
+      userEmail: finalEmail,
+      tourId: new mongoose.Types.ObjectId(tourId), // ✅ ép kiểu
+      quantity,
+      orderId,
+      amount,
+      status: 'Pending',
+      payType: 'MoMo',
+      tourName,
+      fullName,
+      phone,
+    });
 
     res.status(200).json(momoRes.data);
   } catch (error) {
-    console.error('❌ Lỗi gọi MoMo:', error.message);
+    console.error('❌ Lỗi tạo thanh toán MoMo:', error.message);
     res.status(500).json({ message: 'Tạo thanh toán thất bại' });
   }
 });
 
-
-// MoMo gọi về khi thanh toán xong
+// ✅ MoMo gọi về khi thanh toán thành công
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
-  console.log("📩 IPN từ MoMo:", data);
+  console.log("📩 IPN từ MoMo:", JSON.stringify(data, null, 2));
 
   try {
     const updatedPayment = await Payment.findOneAndUpdate(
@@ -95,20 +121,34 @@ router.post('/momo-notify', async (req, res) => {
     ).populate("userId", "username");
 
     if (data.resultCode === 0 && updatedPayment) {
+      console.log("✅ MoMo thanh toán thành công - đang tạo booking");
+
+      // ✅ Tạo booking
       await Booking.create({
-  userId: updatedPayment.userId._id,
-  userEmail: updatedPayment.userEmail,
-  tourId: updatedPayment.tourId,
-  tourName: updatedPayment.tourName || "Chưa rõ",
-  fullName: updatedPayment.fullName || updatedPayment.userId?.username || "Người dùng",
-  phone: updatedPayment.phone || "Không rõ",
-  guestSize: updatedPayment.quantity || 1,
-  totalAmount: updatedPayment.amount,
-  bookAt: new Date(),
-  paymentMethod: "MoMo"
-});
+        userId: updatedPayment.userId._id,
+        userEmail: updatedPayment.userEmail,
+        tourId: new mongoose.Types.ObjectId(updatedPayment.tourId),
+        tourName: updatedPayment.tourName || "Chưa rõ",
+        fullName: updatedPayment.fullName || updatedPayment.userId?.username || "Người dùng",
+        phone: updatedPayment.phone || "Không rõ",
+        guestSize: updatedPayment.quantity || 1,
+        totalAmount: updatedPayment.amount,
+        bookAt: new Date(),
+        paymentMethod: "MoMo"
+      });
 
+      // ✅ Cập nhật số lượng đã đặt (bằng cách tìm và save)
+      const tour = await Tour.findById(updatedPayment.tourId);
+      if (!tour) {
+        console.error("❌ Không tìm thấy tour:", updatedPayment.tourId);
+      } else {
+        console.log("✅ Trước cập nhật currentBookings:", tour.currentBookings);
+        tour.currentBookings += updatedPayment.quantity || 1;
+        await tour.save();
+        console.log("✅ Đã cập nhật currentBookings:", tour.currentBookings);
+      }
 
+      // ✅ Gửi email xác nhận
       if (updatedPayment.userEmail) {
         await sendSuccessEmail(
           updatedPayment.userEmail,
@@ -126,7 +166,7 @@ router.post('/momo-notify', async (req, res) => {
   }
 });
 
-// Lịch sử thanh toán người dùng
+// ✅ Lịch sử thanh toán của user
 router.get('/user/:userId', async (req, res) => {
   try {
     const payments = await Payment.find({
@@ -139,7 +179,7 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
-// Admin: Lấy tất cả
+// ✅ Admin: xem tất cả thanh toán
 router.get('/all', async (req, res) => {
   const token = req.cookies.accessToken;
   if (!token) return res.status(401).json({ success: false });
@@ -158,7 +198,7 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// Admin: Cập nhật trạng thái
+// ✅ Admin: cập nhật trạng thái thanh toán
 router.put('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -179,13 +219,31 @@ router.put('/:id/status', async (req, res) => {
 
     if (!updated) return res.status(404).json({ success: false });
 
-    // Emit realtime
-    if (updated.userId) {
-      io.emit(`payment-updated-${updated.userId._id}`, updated);
-    }
+    io.emit(`payment-updated-${updated.userId._id}`, updated);
 
-    // Gửi email nếu thành công
     if (status === "Success" && updated.userEmail) {
+      // Tạo booking tự động khi admin duyệt thành công
+      await Booking.create({
+        userId: updated.userId._id,
+        userEmail: updated.userEmail,
+        tourId: new mongoose.Types.ObjectId(updated.tourId),
+        tourName: updated.tourName || "Chưa rõ",
+        fullName: updated.fullName || updated.userId?.username || "Người dùng",
+        phone: updated.phone || "Không rõ",
+        guestSize: updated.quantity || 1,
+        totalAmount: updated.amount,
+        bookAt: new Date(),
+        paymentMethod: "MoMo"
+      });
+
+      // Cập nhật số lượng đã đặt tour
+      const tour = await Tour.findById(updated.tourId);
+      if (tour) {
+        tour.currentBookings += updated.quantity || 1;
+        await tour.save();
+      }
+
+      // Gửi email xác nhận
       await sendSuccessEmail(
         updated.userEmail,
         updated.orderId,
@@ -200,8 +258,8 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
-// Route test gửi email từ DB
-// ✅ Route test gửi email từ bản ghi mới nhất
+
+// ✅ Gửi thử email từ đơn thành công gần nhất
 router.get('/test-email', async (req, res) => {
   try {
     const payment = await Payment.findOne({ status: "Success" })
@@ -209,7 +267,7 @@ router.get('/test-email', async (req, res) => {
       .populate("userId", "username");
 
     if (!payment || !payment.userEmail) {
-      return res.send("❌ Không có email hoặc đơn thanh toán thành công để gửi.");
+      return res.send("❌ Không có email hợp lệ để gửi.");
     }
 
     await sendSuccessEmail(

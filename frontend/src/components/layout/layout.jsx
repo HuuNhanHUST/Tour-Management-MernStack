@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 
@@ -10,10 +10,12 @@ import ChatPopup from "../chat/ChatPopup";
 const Layout = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const redirectedRef = useRef(false); // Flag để kiểm soát redirect
 
   useEffect(() => {
-    if (user?.role === "admin") {
-      navigate("/admin"); // 🚫 chặn admin vào home
+    if (!redirectedRef.current && user?.role === "admin") {
+      redirectedRef.current = true; // Đánh dấu đã redirect
+      navigate("/admin"); // Redirect chỉ chạy 1 lần
     }
   }, [user, navigate]);
 

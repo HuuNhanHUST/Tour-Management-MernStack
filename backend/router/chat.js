@@ -2,23 +2,23 @@ import express from "express";
 import { verifyUser, verifyAdmin } from "../utils/verifyToken.js";
 import {
   sendMessage,
-  getMessages,
-  getChatUsers,
-  getMessagesWithUser
+  getMessagesByRoom,
+  getChatRoomsForAdmin,
+  getUserInfoByChatRoomId
 } from "../controllers/chatController.js";
 
 const router = express.Router();
 
-// Gửi tin nhắn (admin hoặc user)
+// Gửi tin nhắn trong chatRoom
 router.post("/send", verifyUser, sendMessage);
 
-// User xem lịch sử với admin
-router.get("/history", verifyUser, getMessages);
+// Lấy lịch sử chat theo chatRoomId
+router.get("/history/:chatRoomId", verifyUser, getMessagesByRoom);
 
-// Admin xem lịch sử với 1 user cụ thể
-router.get("/admin/:userId", verifyAdmin, getMessagesWithUser);
+// Admin lấy danh sách chatRooms (tức user chat)
+router.get("/chatrooms", verifyAdmin, getChatRoomsForAdmin);
 
-// Admin xem danh sách user đã từng chat
-router.get("/users", verifyAdmin, getChatUsers);
+// Admin lấy thông tin user theo chatRoomId
+router.get("/user/:chatRoomId", verifyAdmin, getUserInfoByChatRoomId);
 
 export default router;

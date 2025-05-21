@@ -1,19 +1,26 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const AdminLayout = () => {
+    console.log("AdminLayout render")
   const { user, loading, dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [checkedAuth, setCheckedAuth] = useState(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (!loading) {
+      setCheckedAuth(true);
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (!checkedAuth) return;
     if (!user || user.role !== "admin") {
       navigate("/");
     }
-  }, [user, loading, navigate]);
-
+  }, [checkedAuth, user, navigate]);
   return (
     <div className="d-flex" style={{ minHeight: "100vh" }}>
       <div className="bg-dark text-white p-3" style={{ width: "250px" }}>

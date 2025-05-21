@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import axios from "axios";
 import { AuthContext } from "../../../context/AuthContext";
 import { useSocket } from "../../../context/SocketContext";
@@ -8,20 +8,17 @@ const AdminChatPanel = () => {
   const { user } = useContext(AuthContext);
   const socket = useSocket();
 
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [chatRooms, setChatRooms] = useState([]);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [chat, setChat] = useState([]);
   const [message, setMessage] = useState("");
-  const [unreadCounts, setUnreadCounts] = useState({}); // ✅ NEW
+  const [userInfo, setUserInfo] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
-  const formatTime = (isoString) => {
-    const date = new Date(isoString);
-    const time = date.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const day = date.toLocaleDateString("vi-VN");
-    return `${time} - ${day}`;
+  const formatTime = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) +
+           " - " + d.toLocaleDateString("vi-VN");
   };
 
   useEffect(() => {
@@ -31,104 +28,110 @@ const AdminChatPanel = () => {
   }, [socket, user]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchChatRooms = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/v1/chat/users", {
-          withCredentials: true,
-        });
-        setUsers(res.data.data || []);
+        const res = await axios.get("http://localhost:4000/api/v1/chat/chatrooms", { withCredentials: true });
+        const rooms = res.data.data || [];
+        setChatRooms(rooms);
+        if (rooms.length > 0) setSelectedRoom(rooms[0]._id);
       } catch (err) {
-        console.error("Lỗi khi lấy danh sách người dùng:", err);
+        console.error("Lỗi lấy danh sách chatRooms:", err);
       }
     };
-    fetchUsers();
+    fetchChatRooms();
   }, []);
 
   useEffect(() => {
-    if (!selectedUser) return;
+    if (!selectedRoom) return;
+
     const fetchMessages = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:4000/api/v1/chat/admin/${selectedUser._id}`,
-          { withCredentials: true }
-        );
-        setChat(res.data?.data || []);
+        const res = await axios.get(`http://localhost:4000/api/v1/chat/history/${selectedRoom}`, { withCredentials: true });
+        setChat(res.data.data || []);
       } catch (err) {
-        console.error("Lỗi khi lấy lịch sử chat:", err);
+        console.error("Lỗi lấy lịch sử chat:", err);
       }
     };
+
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4000/api/v1/chat/user/${selectedRoom}`, { withCredentials: true });
+        setUserInfo(res.data.data || null);
+      } catch (err) {
+        console.error("Lỗi lấy thông tin user:", err);
+      }
+    };
+
     fetchMessages();
-  }, [selectedUser]);
+    fetchUser();
+
+    if (socket) {
+      socket.emit("joinRoom", selectedRoom);
+    }
+  }, [selectedRoom, socket]);
+
+  const handleReceiveMessage = useCallback(
+    (msg) => {
+      if (msg.chatRoomId === selectedRoom) {
+        setChat((prev) => [...prev, msg]);
+      } else {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [msg.chatRoomId]: (prev[msg.chatRoomId] || 0) + 1,
+        }));
+      }
+    },
+    [selectedRoom]
+  );
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("receiveMessage", (data) => {
-      const senderId = String(data.senderId);
-      const receiverId = String(data.receiverId);
+    socket.on("receiveMessage", handleReceiveMessage);
+    return () => socket.off("receiveMessage", handleReceiveMessage);
+  }, [socket, handleReceiveMessage]);
 
-      if (
-        selectedUser &&
-        (senderId === selectedUser._id || receiverId === selectedUser._id)
-      ) {
-        setChat((prev) => [...prev, data]);
-      } else {
-        // ✅ Tăng số chưa đọc nếu không phải người đang được chọn
-        setUnreadCounts((prev) => ({
-          ...prev,
-          [senderId]: (prev[senderId] || 0) + 1,
-        }));
-      }
-    });
-
-    return () => socket.off("receiveMessage");
-  }, [socket, selectedUser]);
-
-  const handleSendMessage = async () => {
-    if (!message.trim() || !selectedUser) return;
-
-    const newMsg = {
-      receiverId: selectedUser._id,
-      text: message,
-    };
+  const handleSend = async () => {
+    if (!message.trim()) return;
 
     try {
-      const res = await axios.post("http://localhost:4000/api/v1/chat/send", newMsg, {
-        withCredentials: true,
-      });
+      const res = await axios.post("http://localhost:4000/api/v1/chat/send", {
+        chatRoomId: selectedRoom,
+text: message
+      }, { withCredentials: true });
 
-      const savedMessage = res.data.data;
-      setChat((prev) => [...prev, savedMessage]);
-      socket.emit("sendMessage", savedMessage);
+      const savedMsg = res.data.data;
+      setChat((prev) => [...prev, savedMsg]);
+      socket.emit("sendMessage", savedMsg);
       setMessage("");
     } catch (err) {
-console.error("❌ Gửi tin nhắn thất bại:", err.response?.data || err.message);
+      console.error("Lỗi gửi tin nhắn:", err.response?.data || err.message);
     }
   };
 
-  const handleSelectUser = (u) => {
-    setSelectedUser(u);
+  const handleSelectRoom = (room) => {
+    setSelectedRoom(room._id);
     setUnreadCounts((prev) => {
-      const newCounts = { ...prev };
-      delete newCounts[u._id];
-      return newCounts;
+      const updated = { ...prev };
+      delete updated[room._id];
+      return updated;
     });
   };
 
   return (
     <div className="admin-chat-wrapper">
       <div className="user-list">
-        <h4>Người dùng</h4>
+        <h4>Danh sách người dùng</h4>
         <ul>
-          {users.map((u) => (
+          {chatRooms.map((room) => (
             <li
-              key={u._id}
-              onClick={() => handleSelectUser(u)}
-              className={selectedUser?._id === u._id ? "active" : ""}
+              key={room._id}
+              onClick={() => handleSelectRoom(room)}
+              className={selectedRoom === room._id ? "active" : ""}
             >
-              {u.fullName || u.email}
-              {unreadCounts[u._id] && (
-                <span className="unread-badge">{unreadCounts[u._id]}</span>
+              {room.user?.username || "Không rõ tên"}
+              {unreadCounts[room._id] && (
+                <span className="unread-badge">{unreadCounts[room._id]}</span>
               )}
             </li>
           ))}
@@ -137,17 +140,22 @@ console.error("❌ Gửi tin nhắn thất bại:", err.response?.data || err.me
 
       <div className="chat-box-area">
         <h4>Lịch sử trò chuyện</h4>
-        {selectedUser ? (
-          <div>
-            <p><strong>Đang trò chuyện với:</strong> {selectedUser.fullName || selectedUser.email}</p>
+        {selectedRoom ? (
+          <>
+            <p>
+              <strong>Đang trò chuyện với:</strong>{" "}
+              {userInfo?.username || userInfo?.email || "Không rõ"}
+            </p>
             <div className="chat-history">
-              {chat.map((msg, index) => {
-                const isAdmin = String(msg.senderId) === String(user._id);
+              {chat.map((msg, idx) => {
+                const isMe = String(msg.senderId) === String(user._id);
+                const isAdmin = msg.senderRole === "admin";
+
                 return (
-                  <div
-                    key={index}
-                    className={`message-row ${isAdmin ? "admin" : "user"}`}
-                  >
+                  <div key={idx} className={`message-row ${isMe ? "admin" : isAdmin ? "admin-other" : "user"}`}>
+                    <div className="sender-name" style={{ fontWeight: "bold", fontSize: "0.85rem", marginBottom: "3px" }}>
+                      {isMe ? "Bạn" : isAdmin ? "Admin" : msg.senderName || "Khách"}
+                    </div>
                     <div className="message-bubble">
                       {msg.text}
                       <div className="msg-time">{formatTime(msg.createdAt)}</div>
@@ -162,12 +170,13 @@ console.error("❌ Gửi tin nhắn thất bại:", err.response?.data || err.me
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Nhập tin nhắn..."
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
               />
-              <button onClick={handleSendMessage}>Gửi</button>
+              <button onClick={handleSend}>Gửi</button>
             </div>
-          </div>
+          </>
         ) : (
-          <p>Vui lòng chọn người dùng để xem lịch sử trò chuyện.</p>
+          <p>Vui lòng chọn một phòng chat.</p>
         )}
       </div>
     </div>
