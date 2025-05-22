@@ -1,5 +1,6 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useCallback } from "react";
 import "./booking.css";
+import LocationSelect from "../Location/LocationSelect";
 import {
   Form,
   FormGroup,
@@ -33,18 +34,34 @@ const Booking = ({ tour, avgRating }) => {
     guestSize: 1,
   });
 
-  const availableSlots = maxGroupSize - currentBookings;
+  const [location, setLocation] = useState({
+    province: { code: "", name: "" },
+    district: { code: "", name: "" },
+    ward: { code: "", name: "" },
+  });
+
+  const [addressDetail, setAddressDetail] = useState("");
+
+  const maxGroup = Number(maxGroupSize) || 0;
+  const currentBook = Number(currentBookings) || 0;
+  const availableSlots = maxGroup - currentBook;
+
   const isTourExpired = new Date() > new Date(endDate);
 
   const handleChange = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
+  const handleLocationChange = useCallback((loc) => {
+    console.log("Location selected:", loc);
+    setLocation(loc);
+  }, []);
+
   const serviceFee = 10;
   const totalAmount =
     Number(price) * Number(credentials.guestSize) + Number(serviceFee);
 
-  const handerClick = (e) => {
+  const handerClick = async (e) => {
     e.preventDefault();
 
     if (!user) {
@@ -68,7 +85,49 @@ const Booking = ({ tour, avgRating }) => {
       return;
     }
 
-    navigate("/thank-you");
+    if (
+      !location.province.code ||
+      !location.district.code ||
+      !location.ward.code ||
+      !addressDetail.trim()
+    ) {
+      alert("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
+      return;
+    }
+
+    try {
+      const bookingData = {
+        userId: credentials.userId,
+        userEmail: credentials.userEmail,
+        fullName: credentials.fullName,
+        phone: credentials.phone,
+        guestSize: credentials.guestSize,
+        tourId: tour._id,
+        tourName: tour.title,
+        totalAmount,
+        paymentMethod: "Cash",
+        bookAt: new Date(),
+
+        province: location.province,
+        district: location.district,
+        ward: location.ward,
+        addressDetail,
+      };
+
+      console.log("Dữ liệu gửi lên backend đặt tour:", bookingData);
+
+      const res = await axios.post("http://localhost:4000/api/v1/booking", bookingData);
+
+      if (res.data.success) {
+        alert("Đặt tour thành công!");
+        navigate("/thank-you");
+      } else {
+        alert("Đặt tour thất bại: " + res.data.message);
+      }
+    } catch (error) {
+      console.error("Lỗi đặt tour:", error);
+      alert("Có lỗi xảy ra khi đặt tour.");
+    }
   };
 
   const handleMomoPayment = async () => {
@@ -93,6 +152,16 @@ const Booking = ({ tour, avgRating }) => {
       return;
     }
 
+    if (
+      !location.province.code ||
+      !location.district.code ||
+      !location.ward.code ||
+      !addressDetail.trim()
+    ) {
+      alert("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
+      return;
+    }
+
     const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
 
     try {
@@ -107,7 +176,12 @@ const Booking = ({ tour, avgRating }) => {
         fullName: credentials.fullName,
         phone: credentials.phone,
         quantity: credentials.guestSize,
-        departureDate: startDate
+        departureDate: startDate,
+
+        province: location.province,
+        district: location.district,
+        ward: location.ward,
+        addressDetail,
       });
 
       if (response.data && response.data.payUrl) {
@@ -124,10 +198,13 @@ const Booking = ({ tour, avgRating }) => {
   return (
     <div className="booking">
       <div className="booking__top d-flex align-items-center justify-content-between">
-        <h3>
-          ${price}
-          <span>/ per person</span>
-        </h3>
+        <div>
+          <h3>
+            ${price}
+            <span>/ per person</span>
+          </h3>
+          <h4>{title}</h4>
+        </div>
         <span className="tour__rating d-flex align-items-center">
           <i className="ri-star-line"></i>
           {avgRating === 0 ? "Chưa có đánh giá nào" : avgRating}({reviews?.length})
@@ -180,12 +257,34 @@ const Booking = ({ tour, avgRating }) => {
               placeholder="Số lượng người"
               id="guestSize"
               min="1"
-              max={availableSlots}
+              max={availableSlots > 0 ? availableSlots : 0}
               value={credentials.guestSize}
               required
               onChange={handleChange}
             />
           </FormGroup>
+
+          <FormGroup>
+            <LocationSelect onChange={handleLocationChange} />
+          </FormGroup>
+
+          <FormGroup>
+            <input
+              type="text"
+              placeholder="Số nhà, đường, thôn xóm..."
+              value={addressDetail}
+              onChange={(e) => setAddressDetail(e.target.value)}
+              required
+            />
+          </FormGroup>
+
+          <Button
+            className="btn primary__btn w-100 mt-4"
+            type="submit"
+            disabled={isTourExpired || availableSlots <= 0}
+          >
+            Đặt Ngay
+          </Button>
         </Form>
       </div>
 
@@ -206,14 +305,6 @@ const Booking = ({ tour, avgRating }) => {
             <span>${totalAmount}</span>
           </ListGroupItem>
         </ListGroup>
-
-        <Button
-          className="btn primary__btn w-100 mt-4"
-          onClick={handerClick}
-          disabled={isTourExpired || availableSlots <= 0}
-        >
-          Đặt Ngay
-        </Button>
 
         <Button
           type="button"

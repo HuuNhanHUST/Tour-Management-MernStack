@@ -23,7 +23,7 @@ router.all('*', (req, res, next) => {
 
 // ✅ Gửi yêu cầu thanh toán MoMo
 router.post('/momo', async (req, res) => {
-  const  { amount, orderId, orderInfo, userId, tourId, quantity, email, fullName, phone, tourName }  = req.body;
+  const  { amount, orderId, orderInfo, userId, tourId, quantity, email, fullName, phone, tourName, province, district, ward, addressDetail }  = req.body;
 
   try {
     const tour = await Tour.findById(tourId);
@@ -99,6 +99,10 @@ router.post('/momo', async (req, res) => {
       tourName,
       fullName,
       phone,
+      province: province || { code: "", name: "" },
+      district: district || { code: "", name: "" },
+      ward: ward || { code: "", name: "" },
+      addressDetail: addressDetail || "",
     });
 
     res.status(200).json(momoRes.data);
@@ -134,7 +138,12 @@ router.post('/momo-notify', async (req, res) => {
         guestSize: updatedPayment.quantity || 1,
         totalAmount: updatedPayment.amount,
         bookAt: new Date(),
-        paymentMethod: "MoMo"
+        paymentMethod: "MoMo",
+         // lưu thêm địa chỉ
+      province: province || { code: "", name: "" },
+      district: district || { code: "", name: "" },
+      ward: ward || { code: "", name: "" },
+      addressDetail: addressDetail || "",
       });
 
       // ✅ Cập nhật số lượng đã đặt (bằng cách tìm và save)
@@ -233,7 +242,14 @@ router.put('/:id/status', async (req, res) => {
         guestSize: updated.quantity || 1,
         totalAmount: updated.amount,
         bookAt: new Date(),
-        paymentMethod: "MoMo"
+        paymentMethod: "MoMo",
+
+        
+    // Thêm địa chỉ
+    province: updated.province || { code: "", name: "" },
+    district: updated.district || { code: "", name: "" },
+    ward: updated.ward || { code: "", name: "" },
+    addressDetail: updated.addressDetail || "",
       });
 
       // Cập nhật số lượng đã đặt tour

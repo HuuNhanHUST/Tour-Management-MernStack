@@ -18,6 +18,7 @@ import bookingRoute from './router/booking.js';
 import paymentRoute from './router/payment.js';
 import dashboardRoute from "./router/dashboard.js";
 import chatRoute from "./router/chat.js";
+import locationRoute from "./router/location.js";
 
 
 dotenv.config();
@@ -70,7 +71,7 @@ io.on("connection", (socket) => {
     }
   });
 });
-export { io }; // Nếu bạn cần dùng ở controller
+
 
 // ✅ CORS cho frontend truy cập (localhost:3000)
 app.use(cors({
@@ -123,6 +124,7 @@ app.use('/api/v1/booking', bookingRoute);
 app.use('/api/v1/dashboard', dashboardRoute);
 app.use('/api/v1/chat', chatRoute);
 app.use("/api/v1/payment", paymentRoute);
+app.use("/api/v1/location", locationRoute);
 
 
 
@@ -136,3 +138,7 @@ server.listen(port, () => {
   connectDB();
   console.log(`🚀 Server + Socket.IO running at http://localhost:${port}`);
 });
+
+
+
+export { io }; // Nếu bạn cần dùng ở controller

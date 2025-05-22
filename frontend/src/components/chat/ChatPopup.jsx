@@ -101,8 +101,7 @@ const ChatPopup = () => {
         <div className="chat-box shadow">
           <div className="chat-header bg-primary text-white d-flex justify-content-between align-items-center p-2">
             <span>💬 Hỗ trợ trực tuyến</span>
-            <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>
-✖
+            <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>✖
             </button>
           </div>
 

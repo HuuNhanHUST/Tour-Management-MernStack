@@ -10,7 +10,20 @@ const PaymentSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   tourName: { type: String },
 fullName: { type: String },
-phone: { type: String }
+phone: { type: String },
+province: {
+  code: String,
+  name: String,
+},
+district: {
+  code: String,
+  name: String,
+},
+ward: {
+  code: String,
+  name: String,
+},
+addressDetail: String,
 
 });
 

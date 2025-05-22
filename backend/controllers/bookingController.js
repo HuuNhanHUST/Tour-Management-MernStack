@@ -1,7 +1,7 @@
 import Booking from '../models/Booking.js';
 import Tour from '../models/Tour.js';
 
-// ✅ Tạo booking có kiểm tra chỗ và thời gian (an toàn)
+// ✅ Tạo booking có kiểm tra chỗ và thời gian (an toàn) và thêm địa chỉ
 export const createBooking = async (req, res) => {
   try {
     const {
@@ -12,7 +12,12 @@ export const createBooking = async (req, res) => {
       tourName,
       totalAmount,
       paymentMethod,
-      bookAt
+      bookAt,
+      // Thêm địa chỉ
+      province,
+      district,
+      ward,
+      addressDetail,
     } = req.body;
 
     // ⛔ Kiểm tra số lượng khách hợp lệ
@@ -20,6 +25,19 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Số lượng khách phải lớn hơn 0."
+      });
+    }
+
+    // ⛔ Kiểm tra địa chỉ đầy đủ
+    if (
+      !province || !province.code || !province.name ||
+      !district || !district.code || !district.name ||
+      !ward || !ward.code || !ward.name ||
+      !addressDetail || addressDetail.trim() === ""
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ thông tin địa chỉ (tỉnh, huyện, xã, chi tiết)."
       });
     }
 
@@ -54,7 +72,7 @@ export const createBooking = async (req, res) => {
     tour.currentBookings += guestSize;
     await tour.save();
 
-    // ✅ Tạo booking
+    // ✅ Tạo booking với địa chỉ
     const newBooking = new Booking({
       userId: req.user.id,
       userEmail: req.user.email,
@@ -65,7 +83,11 @@ export const createBooking = async (req, res) => {
       guestSize,
       totalAmount,
       paymentMethod,
-      bookAt
+      bookAt,
+      province,
+      district,
+      ward,
+      addressDetail,
     });
 
     const savedBooking = await newBooking.save();
