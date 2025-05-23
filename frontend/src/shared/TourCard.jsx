@@ -8,13 +8,9 @@ const TourCard = ({ tour }) => {
   const { _id, title, city, photo, price, featured, reviews } = tour;
   const { totalRating, avgRating } = caculateAvgRating(reviews);
 
-  // ✅ Xử lý đường dẫn ảnh (dùng ảnh trong thư mục public/tour-images)
-const imageURL =
-  photo?.startsWith("http") ||
-  photo?.startsWith("data:") ||
-  photo?.startsWith("/tour-images")
+  const imageURL = photo?.startsWith("http")
     ? photo
-    : `http://localhost:4000/uploads/${photo}`;
+    : "https://via.placeholder.com/400x300?text=No+Image";
 
   return (
     <div className="tour__card">

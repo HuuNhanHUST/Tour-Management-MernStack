@@ -269,9 +269,10 @@ router.put('/:id/status', async (req, res) => {
     }
 
     res.status(200).json({ success: true, data: updated });
-  } catch (err) {
-    res.status(500).json({ success: false });
-  }
+ } catch (err) {
+  console.error("❌ Lỗi cập nhật trạng thái thanh toán:", err.message);
+  res.status(500).json({ success: false, message: err.message });
+}
 });
 
 

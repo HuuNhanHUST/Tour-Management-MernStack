@@ -16,8 +16,8 @@ const EditTour = () => {
     maxGroupSize: 0,
     featured: false,
     photo: "",
-    startDate: "",  // ✅ Ngày khởi hành
-    endDate: "",    // ✅ Ngày kết thúc
+    startDate: "",
+    endDate: "",
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -28,8 +28,6 @@ const EditTour = () => {
       .get(`http://localhost:4000/api/v1/tour/${id}`)
       .then((res) => {
         const tourData = res.data.data;
-
-        // ✅ Format ngày cho input date
         tourData.startDate = tourData.startDate?.substring(0, 10) || "";
         tourData.endDate = tourData.endDate?.substring(0, 10) || "";
 
@@ -126,19 +124,14 @@ const EditTour = () => {
           <label className="form-label">Giá tour</label>
           <input type="number" className="form-control" name="price" value={tour.price} onChange={handleChange} required />
         </div>
-
-        {/* ✅ Ngày khởi hành */}
         <div className="col-md-6">
           <label className="form-label">Ngày khởi hành</label>
           <input type="date" className="form-control" name="startDate" value={tour.startDate} onChange={handleChange} required />
         </div>
-
-        {/* ✅ Ngày kết thúc */}
         <div className="col-md-6">
           <label className="form-label">Ngày kết thúc</label>
           <input type="date" className="form-control" name="endDate" value={tour.endDate} onChange={handleChange} required />
         </div>
-
         <div className="col-md-6">
           <label className="form-label">Nổi bật?</label>
           <select className="form-select" name="featured" value={tour.featured} onChange={(e) => setTour({ ...tour, featured: e.target.value === "true" })}>
@@ -146,7 +139,6 @@ const EditTour = () => {
             <option value="true">Có</option>
           </select>
         </div>
-
         <div className="col-md-6">
           <label className="form-label">Ảnh mới (nếu muốn thay)</label>
           <input type="file" accept="image/*" className="form-control" onChange={handleImageChange} />

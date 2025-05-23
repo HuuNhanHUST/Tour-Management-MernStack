@@ -15,8 +15,8 @@ export const createTour = async (req, res) => {
       price,
       maxGroupSize,
       featured,
-      startDate, // ✅ ngày đi
-      endDate     // ✅ ngày về
+      startDate,
+      endDate
     } = req.body;
 
     const newTour = new Tour({
@@ -30,7 +30,7 @@ export const createTour = async (req, res) => {
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.filename || ""
+      photo: req.file?.path || "" // ✅ dùng Cloudinary URL
     });
 
     const savedTour = await newTour.save();
@@ -63,7 +63,7 @@ export const updateTour = async (req, res) => {
       price,
       maxGroupSize,
       featured,
-      photo, // ảnh cũ nếu không upload mới
+      photo,
       startDate,
       endDate
     } = req.body;
@@ -79,7 +79,7 @@ export const updateTour = async (req, res) => {
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.filename || photo,
+      photo: req.file?.path || photo, // ✅ dùng Cloudinary URL
     };
 
     const updatedTour = await Tour.findByIdAndUpdate(

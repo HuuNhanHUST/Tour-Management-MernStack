@@ -183,7 +183,7 @@ const Booking = ({ tour, avgRating }) => {
         ward: location.ward,
         addressDetail,
       });
-
+      
       if (response.data && response.data.payUrl) {
         window.location.href = response.data.payUrl;
       } else {

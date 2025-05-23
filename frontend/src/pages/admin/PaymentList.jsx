@@ -8,6 +8,7 @@ const PaymentList = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Lấy danh sách thanh toán
   useEffect(() => {
     const fetchPayments = async () => {
       try {
@@ -21,29 +22,37 @@ const PaymentList = () => {
     fetchPayments();
   }, []);
 
-  const handleChangeStatus = async (id, newStatus) => {
-    try {
-      await axios.put(`${BASE_URL}/payment/${id}/status`, { status: newStatus }, { withCredentials: true });
-      alert("✔️ Đã cập nhật trạng thái");
-      setPayments((prev) =>
-        prev.map((p) => (p._id === id ? { ...p, status: newStatus } : p))
-      );
-    } catch (err) {
-      alert("❌ Cập nhật thất bại");
-    }
-  };
+  // Đổi trạng thái đơn hàng
+ const handleChangeStatus = async (id, newStatus) => {
+  try {
+    await axios.put(`${BASE_URL}/payment/${id}/status`,
+      { status: newStatus },
+      { withCredentials: true }
+    );
+    alert("✔️ Đã cập nhật trạng thái");
 
+    setPayments((prev) =>
+      prev.map((p) => (p._id === id ? { ...p, status: newStatus } : p))
+    );
+  } catch (err) {
+    console.error("❌ Lỗi cập nhật trạng thái:", err.response?.data || err.message);
+    alert(err.response?.data?.message || "❌ Cập nhật trạng thái thất bại");
+  }
+};
+
+  // Lọc dữ liệu hiển thị
   const filteredPayments = payments.filter((p) => {
-  const matchesStatus = filterStatus === "All" || p.status === filterStatus;
-  const matchesSearch =
-    searchTerm.trim() === "" ||
-    (p.userId &&
-      ((p.userId.username &&
-        p.userId.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-       (p.userId.email &&
-        p.userId.email.toLowerCase().includes(searchTerm.toLowerCase()))));
-  return matchesStatus && matchesSearch;
-});
+    const matchesStatus = filterStatus === "All" || p.status === filterStatus;
+    const matchesSearch =
+      searchTerm.trim() === "" ||
+      (p.userId &&
+        ((p.userId.username &&
+          p.userId.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+         (p.userId.email &&
+          p.userId.email.toLowerCase().includes(searchTerm.toLowerCase()))));
+    return matchesStatus && matchesSearch;
+  });
+
   return (
     <div className="container py-4">
       <h3 className="mb-4 fw-bold d-flex align-items-center gap-2">

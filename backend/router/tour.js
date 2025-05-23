@@ -1,5 +1,5 @@
 import express from "express";
-import upload from "../middleware/upload.js";
+import uploadCloud from "../middleware/uploadCloud.js"; // 🔄 thay multer bằng Cloudinary
 import Tour from '../models/Tour.js';
 import {
   createTour,
@@ -15,8 +15,8 @@ import { verifyAdmin } from "../utils/verifyToken.js";
 
 const route = express.Router();
 
-// ✅ Create tour (có upload ảnh)
-route.post("/", upload.single("photo"), verifyAdmin, createTour);
+// ✅ Create tour (dùng Cloudinary upload ảnh)
+route.post("/", uploadCloud.single("photo"), verifyAdmin, createTour);
 
 // ✅ Get toàn bộ tour (admin) — đặt trước :id để tránh bị override
 route.get("/all", verifyAdmin, async (req, res) => {
@@ -40,7 +40,7 @@ route.get("/", getAllTour);
 route.get("/:id", getSingleTour);
 
 // ✅ Update tour
-route.put("/:id", upload.single("photo"), verifyAdmin, updateTour);
+route.put("/:id", uploadCloud.single("photo"), verifyAdmin, updateTour);
 
 // ✅ Delete tour
 route.delete("/:id", verifyAdmin, deleteTour);

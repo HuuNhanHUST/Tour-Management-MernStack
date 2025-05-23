@@ -111,8 +111,7 @@ const connectDB = async () => {
   }
 };
 
-// ✅ Public static file ảnh
-app.use("/uploads", express.static("uploads"));
+
 
 // ✅ Đăng ký các route RESTful
 

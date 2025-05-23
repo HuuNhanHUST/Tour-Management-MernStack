@@ -43,6 +43,11 @@ const TourList = () => {
     return new Date() > new Date(endDate);
   };
 
+  const getImageUrl = (photo) => {
+    if (!photo) return "https://via.placeholder.com/80";
+    return photo.startsWith("http") ? photo : `http://localhost:4000/uploads/${photo}`;
+  };
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -56,6 +61,7 @@ const TourList = () => {
         <thead className="table-dark">
           <tr>
             <th>#</th>
+            <th>Ảnh</th>
             <th>Tên Tour</th>
             <th>Thành phố</th>
             <th>Ngày đi</th>
@@ -68,15 +74,19 @@ const TourList = () => {
         <tbody>
           {tours.map((tour, index) => {
             const expired = isExpired(tour.endDate);
-
             return (
               <tr key={tour._id} className={expired ? "table-danger" : ""}>
                 <td>{index + 1}</td>
                 <td>
+                  <img
+                    src={getImageUrl(tour.photo)}
+                    alt={tour.title}
+                    style={{ width: "80px", height: "50px", objectFit: "cover", borderRadius: "5px" }}
+                  />
+                </td>
+                <td>
                   {expired ? (
-                    <span style={{ textDecoration: "line-through" }}>
-                      {tour.title}
-                    </span>
+                    <span style={{ textDecoration: "line-through" }}>{tour.title}</span>
                   ) : (
                     tour.title
                   )}
