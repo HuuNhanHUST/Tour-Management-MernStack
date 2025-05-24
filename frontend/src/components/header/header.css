@@ -1,4 +1,3 @@
-/* ======= Header Styles ======= */
 .header {
   width: 100%;
   height: 80px;
@@ -7,32 +6,42 @@
   transition: all 0.3s ease-in-out;
 }
 
-/* ======= Logo Styles ======= */
 .logo img {
-  width: 30%;
+  width: 120px;
   transition: transform 0.3s ease-in-out;
 }
 
-/* ======= Navigation Menu ======= */
+.nav__wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.navigation ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .menu {
-  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 2rem;
-  transition: opacity 0.3s ease-in-out;
 }
 
 .nav__item a {
-  transition: color 0.3s ease-in-out;
-  text-decoration: none;
   color: var(--heading-color);
   font-weight: 500;
   font-size: 1.1rem;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.3s ease-in-out;
 }
 
 .nav__item a:hover {
   color: var(--primary-color);
-  transform: scale(1.1);
 }
 
 .nav__item a.active_link {
@@ -40,7 +49,17 @@
   font-weight: bold;
 }
 
-/* ======= Sticky Header ======= */
+.nav_right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
 .sticky__header {
   position: fixed;
   top: 0;
@@ -50,29 +69,23 @@
   line-height: 70px;
   background: #fff;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  transition: all 0.3s ease-in-out;
   z-index: 1000;
+  transform: translateY(0);
 }
 
 .sticky__header .logo img {
   transform: scale(0.9);
 }
 
-/* ======= Mobile Menu Button ======= */
+/* Mobile menu button */
 .mobile__menu {
   font-size: 1.8rem;
   color: var(--heading-color);
   cursor: pointer;
   display: none;
-  transition: color 0.3s ease-in-out;
 }
 
-.mobile__menu:hover {
-  color: var(--primary-color);
-}
-
-/* ======= Responsive Styles ======= */
+/* Responsive */
 @media screen and (max-width: 992px) {
   .menu {
     display: none;
@@ -84,31 +97,18 @@
     background: #fff;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     padding: 1rem 0;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
   }
 
   .menu.open {
     display: flex;
-    opacity: 1;
-    transform: translateY(0);
   }
 
   .mobile__menu {
     display: block;
   }
 
-  .nav_right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
   .nav_btns {
-    display: flex;
     flex-direction: column;
-    gap: 0.5rem;
   }
 
   .btn {

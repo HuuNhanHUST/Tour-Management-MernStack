@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 const PaymentSchema = new mongoose.Schema({
   userId: { type: mongoose.Types.ObjectId, ref: "User" },
   userEmail: { type: String },
+  tourId: { type: mongoose.Types.ObjectId, ref: "Tour", required: true }, // ✅ thêm
+  quantity: { type: Number, required: true }, // ✅ thêm
   orderId: String,
   amount: Number,
   status: { type: String, enum: ["Pending", "Success", "Failed"], default: "Pending" },

@@ -23,7 +23,22 @@ router.all('*', (req, res, next) => {
 
 // ✅ Gửi yêu cầu thanh toán MoMo
 router.post('/momo', async (req, res) => {
-  const  { amount, orderId, orderInfo, userId, tourId, quantity, email, fullName, phone, tourName, province, district, ward, addressDetail }  = req.body;
+  const {
+    amount,
+    orderId,
+    orderInfo,
+    userId,
+    tourId,
+    quantity,
+    email,
+    fullName,
+    phone,
+    tourName,
+    province,
+    district,
+    ward,
+    addressDetail
+  } = req.body;
 
   try {
     const tour = await Tour.findById(tourId);
@@ -87,16 +102,23 @@ router.post('/momo', async (req, res) => {
       finalEmail = user?.email || "";
     }
 
+    // 🧾 Log dữ liệu sắp lưu
+    console.log("🧾 Tạo payment MoMo với:", {
+      tourId: tour._id,
+      quantity,
+      amount
+    });
+
     await Payment.create({
       userId: new mongoose.Types.ObjectId(userId),
       userEmail: finalEmail,
-      tourId: new mongoose.Types.ObjectId(tourId), // ✅ ép kiểu
-      quantity,
+      tourId: tour._id, // ✅ lấy từ đối tượng đã find được
+      quantity: Number(quantity),
       orderId,
-      amount,
+      amount: Number(amount),
       status: 'Pending',
       payType: 'MoMo',
-      tourName,
+      tourName: tour.title,
       fullName,
       phone,
       province: province || { code: "", name: "" },
@@ -112,6 +134,7 @@ router.post('/momo', async (req, res) => {
   }
 });
 
+
 // ✅ MoMo gọi về khi thanh toán thành công
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
@@ -125,47 +148,7 @@ router.post('/momo-notify', async (req, res) => {
     ).populate("userId", "username");
 
     if (data.resultCode === 0 && updatedPayment) {
-      console.log("✅ MoMo thanh toán thành công - đang tạo booking");
-
-      // ✅ Tạo booking
-      await Booking.create({
-        userId: updatedPayment.userId._id,
-        userEmail: updatedPayment.userEmail,
-        tourId: new mongoose.Types.ObjectId(updatedPayment.tourId),
-        tourName: updatedPayment.tourName || "Chưa rõ",
-        fullName: updatedPayment.fullName || updatedPayment.userId?.username || "Người dùng",
-        phone: updatedPayment.phone || "Không rõ",
-        guestSize: updatedPayment.quantity || 1,
-        totalAmount: updatedPayment.amount,
-        bookAt: new Date(),
-        paymentMethod: "MoMo",
-         // lưu thêm địa chỉ
-      province: province || { code: "", name: "" },
-      district: district || { code: "", name: "" },
-      ward: ward || { code: "", name: "" },
-      addressDetail: addressDetail || "",
-      });
-
-      // ✅ Cập nhật số lượng đã đặt (bằng cách tìm và save)
-      const tour = await Tour.findById(updatedPayment.tourId);
-      if (!tour) {
-        console.error("❌ Không tìm thấy tour:", updatedPayment.tourId);
-      } else {
-        console.log("✅ Trước cập nhật currentBookings:", tour.currentBookings);
-        tour.currentBookings += updatedPayment.quantity || 1;
-        await tour.save();
-        console.log("✅ Đã cập nhật currentBookings:", tour.currentBookings);
-      }
-
-      // ✅ Gửi email xác nhận
-      if (updatedPayment.userEmail) {
-        await sendSuccessEmail(
-          updatedPayment.userEmail,
-          updatedPayment.orderId,
-          updatedPayment.amount,
-          updatedPayment.userId?.username || "Quý khách"
-        );
-      }
+      console.log("✅ MoMo thanh toán thành công - chờ admin duyệt để tạo booking");
     }
 
     res.status(200).json({ message: 'IPN received' });
@@ -174,6 +157,7 @@ router.post('/momo-notify', async (req, res) => {
     res.status(500).json({ message: 'Xử lý IPN thất bại' });
   }
 });
+
 
 // ✅ Lịch sử thanh toán của user
 router.get('/user/:userId', async (req, res) => {
@@ -231,35 +215,55 @@ router.put('/:id/status', async (req, res) => {
     io.emit(`payment-updated-${updated.userId._id}`, updated);
 
     if (status === "Success" && updated.userEmail) {
-      // Tạo booking tự động khi admin duyệt thành công
-      await Booking.create({
+      console.log("✅ Đang xử lý booking cho payment ID:", updated._id);
+      console.log("🔢 Số lượng người (quantity):", updated.quantity);
+      console.log("📌 Tour ID (trước kiểm tra):", updated.tourId);
+      console.log("📧 Email người dùng:", updated.userEmail);
+      console.log("👤 Tên người đặt:", updated.fullName);
+
+      // ✅ Truy xuất lại chính xác tour từ DB bằng ID
+      const tour = await Tour.findOne({ _id: updated.tourId });
+
+      if (!tour) {
+        console.error("❌ Không tìm thấy tour với ID:", updated.tourId);
+        return res.status(404).json({ success: false, message: "Không tìm thấy tour để tạo booking." });
+      }
+
+      // ✅ Kiểm tra số lượng còn trống
+      const remaining = tour.maxGroupSize - tour.currentBookings;
+      if (updated.quantity > remaining) {
+        return res.status(400).json({
+          success: false,
+          message: `Không đủ chỗ trống. Chỉ còn lại ${remaining} chỗ.`,
+        });
+      }
+
+      // ✅ Tạo booking
+      const newBooking = new Booking({
         userId: updated.userId._id,
         userEmail: updated.userEmail,
-        tourId: new mongoose.Types.ObjectId(updated.tourId),
-        tourName: updated.tourName || "Chưa rõ",
+        tourId: tour._id,
+        tourName: updated.tourName || tour.title,
         fullName: updated.fullName || updated.userId?.username || "Người dùng",
         phone: updated.phone || "Không rõ",
         guestSize: updated.quantity || 1,
         totalAmount: updated.amount,
         bookAt: new Date(),
         paymentMethod: "MoMo",
-
-        
-    // Thêm địa chỉ
-    province: updated.province || { code: "", name: "" },
-    district: updated.district || { code: "", name: "" },
-    ward: updated.ward || { code: "", name: "" },
-    addressDetail: updated.addressDetail || "",
+        province: updated.province || { code: "", name: "" },
+        district: updated.district || { code: "", name: "" },
+        ward: updated.ward || { code: "", name: "" },
+        addressDetail: updated.addressDetail || "",
       });
 
-      // Cập nhật số lượng đã đặt tour
-      const tour = await Tour.findById(updated.tourId);
-      if (tour) {
-        tour.currentBookings += updated.quantity || 1;
-        await tour.save();
-      }
+      await newBooking.save();
 
-      // Gửi email xác nhận
+      // ✅ Cập nhật số lượng người trong tour
+      tour.currentBookings += updated.quantity || 1;
+      await tour.save();
+      console.log("✅ Đã cập nhật currentBookings thành:", tour.currentBookings);
+
+      // ✅ Gửi email
       await sendSuccessEmail(
         updated.userEmail,
         updated.orderId,
@@ -269,11 +273,13 @@ router.put('/:id/status', async (req, res) => {
     }
 
     res.status(200).json({ success: true, data: updated });
- } catch (err) {
-  console.error("❌ Lỗi cập nhật trạng thái thanh toán:", err.message);
-  res.status(500).json({ success: false, message: err.message });
-}
+  } catch (err) {
+    console.error("❌ Lỗi cập nhật trạng thái thanh toán:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
+
+
 
 
 // ✅ Gửi thử email từ đơn thành công gần nhất

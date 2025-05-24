@@ -113,10 +113,13 @@ const Booking = ({ tour, avgRating }) => {
         ward: location.ward,
         addressDetail,
       };
-
+        
       console.log("Dữ liệu gửi lên backend đặt tour:", bookingData);
 
-      const res = await axios.post("http://localhost:4000/api/v1/booking", bookingData);
+      const res = await axios.post("http://localhost:4000/api/v1/booking", 
+        bookingData , 
+        { withCredentials: true } 
+      );
 
       if (res.data.success) {
         alert("Đặt tour thành công!");
@@ -182,7 +185,9 @@ const Booking = ({ tour, avgRating }) => {
         district: location.district,
         ward: location.ward,
         addressDetail,
-      });
+      }, { withCredentials: true } // Gửi cookie xác thực
+
+    );
       
       if (response.data && response.data.payUrl) {
         window.location.href = response.data.payUrl;

@@ -12,7 +12,9 @@ const nav_links = [
   { path: "/home", display: "Home" },
   { path: "/about", display: "About" },
   { path: "/tour", display: "Tours" },
-  { path: "/payment-history", display: "Lịch sử thanh toán" } // ✅ thêm menu
+  { path: "/payment-history", display: "Lịch sử thanh toán" } ,
+  { path: "/saved-tours", display: "Yêu thích" }
+
 ];
 
 const Header = () => {
@@ -63,7 +65,7 @@ const Header = () => {
             <div className={`navigation menu ${menuOpen ? "open" : ""}`}>
               <ul className="d-flex align-items-center gap-5">
                 {nav_links
-                  .filter((item) => item.path !== "/payment-history" || user)
+                  .filter((item) => (item.path !== "/payment-history" && item.path !== "/saved-tours") || user )
                   .map((item, index) => (
                     <li className="nav__item" key={index}>
                       <NavLink

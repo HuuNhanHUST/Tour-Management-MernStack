@@ -19,6 +19,7 @@ import paymentRoute from './router/payment.js';
 import dashboardRoute from "./router/dashboard.js";
 import chatRoute from "./router/chat.js";
 import locationRoute from "./router/location.js";
+import favoriteRoute from './router/favorite.js';
 
 
 dotenv.config();
@@ -124,7 +125,7 @@ app.use('/api/v1/dashboard', dashboardRoute);
 app.use('/api/v1/chat', chatRoute);
 app.use("/api/v1/payment", paymentRoute);
 app.use("/api/v1/location", locationRoute);
-
+app.use('/api/v1/users', favoriteRoute);
 
 
 // ✅ Route test
