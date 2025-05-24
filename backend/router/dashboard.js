@@ -1,10 +1,12 @@
 import express from "express";
 import {
-  getDashboardStats,      // gọi 1 lần cho toàn bộ dashboard
+  getDashboardStats,
   getUserCount,
   getTourCount,
   getBookingCount,
-  getTotalRevenue
+  getTotalRevenue,
+  getOrderStatsByDate,
+  getRevenueStatsByDate, // Import new function
 } from "../controllers/dashboardController.js";
 
 import { verifyAdmin } from "../utils/verifyToken.js";
@@ -19,5 +21,11 @@ router.get("/getUserCount", verifyAdmin, getUserCount);
 router.get("/getTourCount", verifyAdmin, getTourCount);
 router.get("/getBookingCount", verifyAdmin, getBookingCount);
 router.get("/getTotalRevenue", verifyAdmin, getTotalRevenue);
+
+// 🔹 Route cho thống kê đơn hàng theo ngày
+router.get("/orders", verifyAdmin, getOrderStatsByDate);
+
+// 🔹 Route cho thống kê doanh thu theo ngày
+router.get("/revenue", verifyAdmin, getRevenueStatsByDate);
 
 export default router;
