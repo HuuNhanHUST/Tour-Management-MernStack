@@ -12,7 +12,7 @@ const AddTour = () => {
     desc: "",
     price: "",
     maxGroupSize: "",
-    minGroupSize: "", // ✅ Thêm mới
+    minGroupSize: "",
     featured: false,
     startDate: "",
     endDate: "",
@@ -27,41 +27,48 @@ const AddTour = () => {
   const [mealInput, setMealInput] = useState("");
   const [newItinerary, setNewItinerary] = useState({ day: "", title: "", description: "" });
 
-  const [imageFile, setImageFile] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoFiles, setPhotoFiles] = useState([]); // ảnh phụ
+  const [photoPreviews, setPhotoPreviews] = useState([]); // preview ảnh phụ
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     let newValue = value;
 
     if (type === "text" && ["distance", "price", "maxGroupSize", "minGroupSize"].includes(name)) {
-      newValue = value.replace(/^0+/, "");
-      if (newValue === "") newValue = "0";
+      newValue = value.replace(/^0+/, "") || "0";
     }
 
-    setTour({
-      ...tour,
-      [name]: newValue,
-    });
+    setTour({ ...tour, [name]: newValue });
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setPreviewImage(URL.createObjectURL(file));
-    }
+    setPhotoFile(file);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  };
+
+  const handlePhotosChange = (e) => {
+    const files = Array.from(e.target.files);
+    setPhotoFiles(prev => [...prev, ...files]);
+    setPhotoPreviews(prev => [...prev, ...files.map(file => URL.createObjectURL(file))]);
+  };
+
+  const handleRemovePhoto = (index) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAddActivity = () => {
-    if (activityInput.trim() !== "") {
+    if (activityInput.trim()) {
       setTour({ ...tour, activities: [...tour.activities, activityInput.trim()] });
       setActivityInput("");
     }
   };
 
   const handleAddMeal = () => {
-    if (mealInput.trim() !== "") {
+    if (mealInput.trim()) {
       setTour({ ...tour, mealsIncluded: [...tour.mealsIncluded, mealInput.trim()] });
       setMealInput("");
     }
@@ -79,6 +86,7 @@ const AddTour = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const formData = new FormData();
       for (const key in tour) {
@@ -88,7 +96,14 @@ const AddTour = () => {
           formData.append(key, tour[key]);
         }
       }
-      formData.append("photo", imageFile);
+
+      if (photoFile) {
+        formData.append("photo", photoFile);
+      }
+
+      photoFiles.forEach((file) => {
+        formData.append("photos", file);
+      });
 
       await axios.post("http://localhost:4000/api/v1/tour", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -98,7 +113,7 @@ const AddTour = () => {
       alert("✅ Thêm tour thành công!");
       navigate("/admin/tours");
     } catch (err) {
-      console.error("Lỗi upload:", err);
+      console.error("❌ Upload thất bại:", err);
       alert("❌ Upload thất bại. Kiểm tra dữ liệu hoặc file!");
     }
   };
@@ -122,19 +137,19 @@ const AddTour = () => {
         </div>
         <div className="col-md-6">
           <label className="form-label">Khoảng cách (km)</label>
-          <input type="text" className="form-control" name="distance" value={tour.distance} onChange={handleChange} required inputMode="numeric" pattern="[0-9]*" />
+          <input type="text" className="form-control" name="distance" value={tour.distance} onChange={handleChange} required />
         </div>
         <div className="col-md-6">
           <label className="form-label">Số người tối đa</label>
-          <input type="text" className="form-control" name="maxGroupSize" value={tour.maxGroupSize} onChange={handleChange} required inputMode="numeric" pattern="[0-9]*" />
+          <input type="text" className="form-control" name="maxGroupSize" value={tour.maxGroupSize} onChange={handleChange} required />
         </div>
         <div className="col-md-6">
           <label className="form-label">Số người tối thiểu</label>
-          <input type="text" className="form-control" name="minGroupSize" value={tour.minGroupSize} onChange={handleChange} required inputMode="numeric" pattern="[0-9]*" />
+          <input type="text" className="form-control" name="minGroupSize" value={tour.minGroupSize} onChange={handleChange} required />
         </div>
         <div className="col-md-6">
           <label className="form-label">Giá tour</label>
-          <input type="text" className="form-control" name="price" value={tour.price} onChange={handleChange} required inputMode="numeric" pattern="[0-9]*" />
+          <input type="text" className="form-control" name="price" value={tour.price} onChange={handleChange} required />
         </div>
         <div className="col-md-6">
           <label className="form-label">Ngày đi</label>
@@ -151,19 +166,39 @@ const AddTour = () => {
             <option value="true">Có</option>
           </select>
         </div>
+
+        {/* Ảnh chính */}
         <div className="col-md-6">
-          <label className="form-label">Ảnh (chọn từ máy)</label>
+          <label className="form-label">Ảnh chính</label>
           <input type="file" accept="image/*" className="form-control" onChange={handleImageChange} required />
-          {previewImage && (
-            <img src={previewImage} alt="Xem trước" className="img-thumbnail mt-2" style={{ maxWidth: "300px", height: "auto" }} />
-          )}
+          {photoPreview && <img src={photoPreview} alt="Ảnh chính" className="img-thumbnail mt-2" style={{ maxWidth: "200px" }} />}
         </div>
+
+        {/* Ảnh phụ + xóa */}
+        <div className="col-md-6">
+          <label className="form-label">Ảnh phụ (chọn nhiều lần được)</label>
+          <input type="file" accept="image/*" className="form-control" multiple onChange={handlePhotosChange} />
+          <div className="d-flex flex-wrap gap-2 mt-2">
+            {photoPreviews.map((url, i) => (
+              <div key={i} style={{ position: "relative" }}>
+                <img src={url} alt={`Ảnh phụ ${i}`} className="img-thumbnail" style={{ width: "100px" }} />
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Xóa"
+                  onClick={() => handleRemovePhoto(i)}
+                  style={{ position: "absolute", top: "-5px", right: "-5px" }}
+                ></button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mô tả và các trường nâng cao */}
         <div className="col-12">
           <label className="form-label">Mô tả</label>
           <textarea className="form-control" name="desc" rows="3" value={tour.desc} onChange={handleChange} required></textarea>
         </div>
-
-        {/* Các trường nâng cao */}
         <div className="col-md-6">
           <label className="form-label">Phương tiện di chuyển</label>
           <input type="text" className="form-control" name="transportation" value={tour.transportation} onChange={handleChange} />
@@ -172,13 +207,15 @@ const AddTour = () => {
           <label className="form-label">Khách sạn</label>
           <input type="text" className="form-control" name="hotelInfo" value={tour.hotelInfo} onChange={handleChange} />
         </div>
+
+        {/* Hoạt động + Bữa ăn */}
         <div className="col-md-6">
           <label className="form-label">Thêm hoạt động</label>
           <div className="d-flex gap-2">
             <input type="text" className="form-control" value={activityInput} onChange={(e) => setActivityInput(e.target.value)} />
             <button type="button" className="btn btn-secondary" onClick={handleAddActivity}>+</button>
           </div>
-          <ul className="mt-2">{tour.activities.map((a, i) => <li key={i}>{a}</li>)}</ul>
+          <ul>{tour.activities.map((a, i) => <li key={i}>{a}</li>)}</ul>
         </div>
         <div className="col-md-6">
           <label className="form-label">Thêm bữa ăn</label>
@@ -186,14 +223,16 @@ const AddTour = () => {
             <input type="text" className="form-control" value={mealInput} onChange={(e) => setMealInput(e.target.value)} />
             <button type="button" className="btn btn-secondary" onClick={handleAddMeal}>+</button>
           </div>
-          <ul className="mt-2">{tour.mealsIncluded.map((m, i) => <li key={i}>{m}</li>)}</ul>
+          <ul>{tour.mealsIncluded.map((m, i) => <li key={i}>{m}</li>)}</ul>
         </div>
+
+        {/* Lịch trình */}
         <div className="col-12">
-          <label className="form-label">Lịch trình (Thêm từng ngày)</label>
+          <label className="form-label">Lịch trình</label>
           <div className="row g-2">
-            <div className="col-md-2"><input type="number" className="form-control" placeholder="Ngày" value={newItinerary.day} onChange={(e) => setNewItinerary({ ...newItinerary, day: e.target.value })} /></div>
-            <div className="col-md-4"><input type="text" className="form-control" placeholder="Tiêu đề" value={newItinerary.title} onChange={(e) => setNewItinerary({ ...newItinerary, title: e.target.value })} /></div>
-            <div className="col-md-4"><input type="text" className="form-control" placeholder="Mô tả" value={newItinerary.description} onChange={(e) => setNewItinerary({ ...newItinerary, description: e.target.value })} /></div>
+            <div className="col-md-2"><input type="number" placeholder="Ngày" className="form-control" value={newItinerary.day} onChange={(e) => setNewItinerary({ ...newItinerary, day: e.target.value })} /></div>
+            <div className="col-md-4"><input type="text" placeholder="Tiêu đề" className="form-control" value={newItinerary.title} onChange={(e) => setNewItinerary({ ...newItinerary, title: e.target.value })} /></div>
+            <div className="col-md-4"><input type="text" placeholder="Mô tả" className="form-control" value={newItinerary.description} onChange={(e) => setNewItinerary({ ...newItinerary, description: e.target.value })} /></div>
             <div className="col-md-2"><button type="button" className="btn btn-primary w-100" onClick={handleAddItinerary}>Thêm</button></div>
           </div>
           <ul className="mt-2">{tour.itinerary.map((item, i) => <li key={i}>Ngày {item.day}: {item.title} – {item.description}</li>)}</ul>

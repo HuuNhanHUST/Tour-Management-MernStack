@@ -2,7 +2,7 @@ import Tour from '../models/Tour.js';
 
 // ✅ Hàm hỗ trợ parse JSON từ FormData
 const parseJSONFields = (body) => {
-  const fieldsToParse = ['activities', 'mealsIncluded', 'itinerary'];
+  const fieldsToParse = ['activities', 'mealsIncluded', 'itinerary', 'photos'];
   fieldsToParse.forEach(field => {
     if (body[field] && typeof body[field] === 'string') {
       try {
@@ -17,9 +17,6 @@ const parseJSONFields = (body) => {
 
 // ✅ Tạo mới Tour
 export const createTour = async (req, res) => {
-  console.log("📦 BODY:", req.body);
-  console.log("🖼 FILE:", req.file);
-
   try {
     parseJSONFields(req.body);
 
@@ -31,7 +28,7 @@ export const createTour = async (req, res) => {
       desc,
       price,
       maxGroupSize,
-      minGroupSize, // ✅ thêm
+      minGroupSize,
       featured,
       startDate,
       endDate,
@@ -39,8 +36,11 @@ export const createTour = async (req, res) => {
       hotelInfo,
       activities,
       mealsIncluded,
-      itinerary
+      itinerary,
     } = req.body;
+
+    const photo = req.files?.photo?.[0]?.path || "";
+    const photos = req.files?.photos?.map(file => file.path) || [];
 
     const newTour = new Tour({
       title,
@@ -50,11 +50,12 @@ export const createTour = async (req, res) => {
       desc,
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
-      minGroupSize: Number(minGroupSize), // ✅ thêm
+      minGroupSize: Number(minGroupSize),
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.path || "",
+      photo,
+      photos,
       transportation,
       hotelInfo,
       activities,
@@ -93,9 +94,10 @@ export const updateTour = async (req, res) => {
       desc,
       price,
       maxGroupSize,
-      minGroupSize, // ✅ thêm
+      minGroupSize,
       featured,
-      photo,
+      photo: oldPhoto,
+      photos: oldPhotos,
       startDate,
       endDate,
       transportation,
@@ -105,6 +107,11 @@ export const updateTour = async (req, res) => {
       itinerary
     } = req.body;
 
+    const photo = req.files?.photo?.[0]?.path || oldPhoto;
+    const newPhotos = req.files?.photos?.map(f => f.path) || [];
+    const oldPhotosParsed = Array.isArray(oldPhotos) ? oldPhotos : JSON.parse(oldPhotos || "[]");
+    const photos = [...oldPhotosParsed, ...newPhotos];
+
     const updatedData = {
       title,
       city,
@@ -113,11 +120,12 @@ export const updateTour = async (req, res) => {
       desc,
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
-      minGroupSize: Number(minGroupSize), // ✅ thêm
+      minGroupSize: Number(minGroupSize),
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.path || photo,
+      photo,
+      photos,
       transportation,
       hotelInfo,
       activities,
