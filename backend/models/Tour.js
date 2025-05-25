@@ -36,36 +36,67 @@ const tourSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ✅ Ngày khởi hành
+   minGroupSize: {
+      type: Number,
+      default: 2,
+      required: true,
+    },
+
+
+    
     startDate: {
       type: Date,
       required: true,
     },
-
-    // ✅ Ngày kết thúc
     endDate: {
       type: Date,
       required: true,
     },
-
-    // ✅ Số lượng người đã đặt
     currentBookings: {
       type: Number,
       default: 0,
       required: true,
     },
-
     reviews: [
       {
         type: mongoose.Types.ObjectId,
         ref: "Review",
       },
     ],
-
     featured: {
       type: Boolean,
       default: false,
     },
+
+    // ✅ THÊM MỚI PHẦN NGHIỆP VỤ
+
+    itinerary: [
+      {
+        day: Number,
+        title: String,
+        description: String,
+      }
+    ],
+
+    transportation: {
+      type: String, // Ví dụ: 'Máy bay + Xe du lịch'
+    },
+
+    activities: [
+      {
+        type: String, // Ví dụ: 'Tham quan', 'Team building', 'Tắm biển'
+      }
+    ],
+
+    hotelInfo: {
+      type: String, // Ví dụ: 'Khách sạn 4 sao khu vực trung tâm'
+    },
+
+    mealsIncluded: [
+      {
+        type: String, // Ví dụ: 'Bữa sáng', 'Bữa trưa buffet'
+      }
+    ],
   },
   { timestamps: true }
 );

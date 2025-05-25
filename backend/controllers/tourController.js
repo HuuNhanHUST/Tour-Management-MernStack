@@ -1,11 +1,28 @@
 import Tour from '../models/Tour.js';
 
+// ✅ Hàm hỗ trợ parse JSON từ FormData
+const parseJSONFields = (body) => {
+  const fieldsToParse = ['activities', 'mealsIncluded', 'itinerary'];
+  fieldsToParse.forEach(field => {
+    if (body[field] && typeof body[field] === 'string') {
+      try {
+        body[field] = JSON.parse(body[field]);
+      } catch (e) {
+        console.warn(`❗ Không parse được ${field}:`, e.message);
+        body[field] = [];
+      }
+    }
+  });
+};
+
 // ✅ Tạo mới Tour
 export const createTour = async (req, res) => {
   console.log("📦 BODY:", req.body);
   console.log("🖼 FILE:", req.file);
 
   try {
+    parseJSONFields(req.body);
+
     const {
       title,
       city,
@@ -14,9 +31,15 @@ export const createTour = async (req, res) => {
       desc,
       price,
       maxGroupSize,
+      minGroupSize, // ✅ thêm
       featured,
       startDate,
-      endDate
+      endDate,
+      transportation,
+      hotelInfo,
+      activities,
+      mealsIncluded,
+      itinerary
     } = req.body;
 
     const newTour = new Tour({
@@ -27,10 +50,16 @@ export const createTour = async (req, res) => {
       desc,
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
+      minGroupSize: Number(minGroupSize), // ✅ thêm
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.path || "" // ✅ dùng Cloudinary URL
+      photo: req.file?.path || "",
+      transportation,
+      hotelInfo,
+      activities,
+      mealsIncluded,
+      itinerary
     });
 
     const savedTour = await newTour.save();
@@ -54,6 +83,8 @@ export const updateTour = async (req, res) => {
   const id = req.params.id;
 
   try {
+    parseJSONFields(req.body);
+
     const {
       title,
       city,
@@ -62,10 +93,16 @@ export const updateTour = async (req, res) => {
       desc,
       price,
       maxGroupSize,
+      minGroupSize, // ✅ thêm
       featured,
       photo,
       startDate,
-      endDate
+      endDate,
+      transportation,
+      hotelInfo,
+      activities,
+      mealsIncluded,
+      itinerary
     } = req.body;
 
     const updatedData = {
@@ -76,10 +113,16 @@ export const updateTour = async (req, res) => {
       desc,
       price: Number(price),
       maxGroupSize: Number(maxGroupSize),
+      minGroupSize: Number(minGroupSize), // ✅ thêm
       featured: featured === "true" || featured === true,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      photo: req.file?.path || photo, // ✅ dùng Cloudinary URL
+      photo: req.file?.path || photo,
+      transportation,
+      hotelInfo,
+      activities,
+      mealsIncluded,
+      itinerary
     };
 
     const updatedTour = await Tour.findByIdAndUpdate(

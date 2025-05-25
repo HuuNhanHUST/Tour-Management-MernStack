@@ -54,6 +54,7 @@ const PaymentHistory = () => {
               <tr>
                 <th>#</th>
                 <th>Mã đơn hàng</th>
+                <th>Tên tour</th>
                 <th>Số tiền</th>
                 <th>Phương thức</th>
                 <th>Trạng thái</th>
@@ -65,6 +66,7 @@ const PaymentHistory = () => {
                 <tr key={item._id}>
                   <td>{index + 1}</td>
                   <td className="text-break">{item.orderId}</td>
+                  <td className="text-break">{item.tourName || "N/A"}</td>
                   <td>{item.amount.toLocaleString()}₫</td>
                   <td>{item.payType}</td>
                   <td>

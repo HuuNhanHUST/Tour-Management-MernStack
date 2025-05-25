@@ -46,14 +46,18 @@ const Booking = ({ tour, avgRating }) => {
   const currentBook = Number(currentBookings) || 0;
   const availableSlots = maxGroup - currentBook;
 
-  const isTourExpired = new Date() > new Date(endDate);
+  const now = new Date();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const isTourExpired = now > end;
+  const isTourOngoing = now >= start && now <= end;
 
   const handleChange = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
   const handleLocationChange = useCallback((loc) => {
-    console.log("Location selected:", loc);
     setLocation(loc);
   }, []);
 
@@ -72,6 +76,11 @@ const Booking = ({ tour, avgRating }) => {
 
     if (isTourExpired) {
       alert("Tour này đã kết thúc. Không thể đặt nữa.");
+      return;
+    }
+
+    if (isTourOngoing) {
+      alert("Tour đang diễn ra. Không thể đặt lúc này.");
       return;
     }
 
@@ -113,8 +122,6 @@ const Booking = ({ tour, avgRating }) => {
         ward: location.ward,
         addressDetail,
       };
-        
-      console.log("Dữ liệu gửi lên backend đặt tour:", bookingData);
 
       const res = await axios.post("http://localhost:4000/api/v1/booking", 
         bookingData , 
@@ -142,6 +149,11 @@ const Booking = ({ tour, avgRating }) => {
 
     if (isTourExpired) {
       alert("Tour đã kết thúc. Không thể thanh toán.");
+      return;
+    }
+
+    if (isTourOngoing) {
+      alert("Tour đang diễn ra. Không thể thanh toán.");
       return;
     }
 
@@ -185,10 +197,8 @@ const Booking = ({ tour, avgRating }) => {
         district: location.district,
         ward: location.ward,
         addressDetail,
-      }, { withCredentials: true } // Gửi cookie xác thực
+      }, { withCredentials: true });
 
-    );
-      
       if (response.data && response.data.payUrl) {
         window.location.href = response.data.payUrl;
       } else {
@@ -223,11 +233,15 @@ const Booking = ({ tour, avgRating }) => {
           <p className="text-danger fw-bold">❌ Tour này đã kết thúc.</p>
         )}
 
+        {isTourOngoing && (
+          <p className="text-danger fw-bold">❌ Tour đang diễn ra. Không thể đặt.</p>
+        )}
+
         {availableSlots <= 0 && (
           <p className="text-danger fw-bold">❌ Tour đã hết chỗ.</p>
         )}
 
-        {availableSlots > 0 && !isTourExpired && (
+        {availableSlots > 0 && !isTourExpired && !isTourOngoing && (
           <p className="text-success fw-bold">✅ Còn lại: {availableSlots} chỗ</p>
         )}
 
@@ -286,7 +300,7 @@ const Booking = ({ tour, avgRating }) => {
           <Button
             className="btn primary__btn w-100 mt-4"
             type="submit"
-            disabled={isTourExpired || availableSlots <= 0}
+            disabled={isTourExpired || isTourOngoing || availableSlots <= 0}
           >
             Đặt Ngay
           </Button>
@@ -315,7 +329,7 @@ const Booking = ({ tour, avgRating }) => {
           type="button"
           className="btn btn-danger w-100 mt-3"
           onClick={handleMomoPayment}
-          disabled={isTourExpired || availableSlots <= 0}
+          disabled={isTourExpired || isTourOngoing || availableSlots <= 0}
         >
           Thanh toán qua MoMo
         </Button>

@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem; /* ✅ sửa từ font-style thành font-size */
+  font-size: 1rem; /* ✅ fixed */
   color: var(--text-color);
 }
 
@@ -37,6 +37,24 @@
   line-height: 30px;
   font-size: 1rem;
   color: var(--text-color);
+}
+
+/* ⭐ Chi tiết mở rộng */
+.tour__info ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+}
+
+.tour__info ul li {
+  margin-bottom: 0.5rem;
+}
+
+.tour__info h6 {
+  font-weight: 600;
+  margin-top: 0.75rem;
+  color: var(--heading-color);
 }
 
 .rating__group span {
@@ -113,7 +131,7 @@
   font-weight: 500;
 }
 
-/* ✅ Bổ sung layout hiển thị tour rõ ràng đẹp */
+/* ✅ Layout hiển thị chi tiết mở rộng */
 .tour__extra-details {
   display: flex;
   flex-wrap: wrap;
@@ -124,7 +142,7 @@
 }
 
 .tour__extra-details span {
-  flex: 0 0 48%; /* 2 cột ngang hàng */
+  flex: 0 0 48%;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -141,5 +159,10 @@
 @media (max-width: 576px) {
   .tour__extra-details span {
     flex: 0 0 100%;
+  }
+
+  .tour__info,
+  .tour__reviews {
+    padding: 1.2rem;
   }
 }

@@ -75,9 +75,15 @@ const TourDetails = () => {
     city,
     distance,
     maxGroupSize,
+    minGroupSize,
     currentBookings,
     startDate,
     endDate,
+    transportation,
+    hotelInfo,
+    mealsIncluded,
+    activities,
+    itinerary
   } = tour;
 
   const availableSlots = maxGroupSize - currentBookings;
@@ -135,6 +141,14 @@ const TourDetails = () => {
                     <span>
                       <i className="ri-group-line"></i> <strong>Đã đặt:</strong> {currentBookings} người
                     </span>
+
+                    {minGroupSize && currentBookings < minGroupSize && (
+                      <p className="text-warning fw-bold mt-2">
+                        ⚠️ Tour yêu cầu tối thiểu {minGroupSize} người.<br />
+                        Hiện tại mới có {currentBookings} người – tour có thể bị hủy nếu không đủ!
+                      </p>
+                    )}
+
                     <span>
                       <i className="ri-group-line"></i> <strong>Còn lại:</strong> {availableSlots > 0 ? `${availableSlots} người` : "❌ Hết chỗ"}
                     </span>
@@ -156,6 +170,34 @@ const TourDetails = () => {
 
                   <h5 className="mt-4">Mô tả</h5>
                   <p>{desc}</p>
+
+                  <h5 className="mt-4">Phương tiện di chuyển</h5>
+                  <p>{transportation || "Không có thông tin"}</p>
+
+                  <h5 className="mt-4">Thông tin khách sạn</h5>
+                  <p>{hotelInfo || "Không có thông tin"}</p>
+
+                  <h5 className="mt-4">Bữa ăn bao gồm</h5>
+                  <ul>
+                    {mealsIncluded?.length > 0 ? mealsIncluded.map((meal, i) => <li key={i}>{meal}</li>) : <li>Không có thông tin</li>}
+                  </ul>
+
+                  <h5 className="mt-4">Các hoạt động trong tour</h5>
+                  <ul>
+                    {activities?.length > 0 ? activities.map((act, i) => <li key={i}>{act}</li>) : <li>Không có thông tin</li>}
+                  </ul>
+
+                  <h5 className="mt-4">🗓️ Lịch trình tour</h5>
+                  {itinerary?.length > 0 ? (
+                    itinerary.map((item, i) => (
+                      <div key={i} className="mb-3">
+                        <h6>Ngày {item.day}: {item.title}</h6>
+                        <p>{item.description}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p>Không có lịch trình chi tiết.</p>
+                  )}
                 </div>
 
                 <div className="tour__reviews mt-4">
