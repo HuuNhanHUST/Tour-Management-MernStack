@@ -4,7 +4,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthContext } from "./context/AuthContext";
 
 import Layout from "./components/layout/layout";
-import PaymentHistory from "./pages/PaymentHistory";
 
 // 📦 Admin pages
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -15,7 +14,8 @@ import EditTour from "./pages/admin/Tour/Edit";
 import UserList from "./pages/admin/User/List";
 import AdminChatPanel from "./pages/admin/Chat/AdminChatPanel"; 
 import PaymentList from "./pages/admin/PaymentList";
-
+import LoginHistory from "./pages/admin/LoginHistory";
+import PricingManager from "./pages/admin/Pricing/PricingManager";
 
 function App() {
   const { user,loading } = useContext(AuthContext);
@@ -33,7 +33,6 @@ function App() {
     <Routes>
       {/* 👤 Người dùng - dùng Layout chung */}
       <Route path="/*" element={<Layout />} />
-      <Route path="/payment-history" element={<PaymentHistory />} />
 
       {/* 🛡️ Admin - chỉ khi có role === 'admin' */}
       {user?.role === 'admin' ? (
@@ -43,8 +42,11 @@ function App() {
           <Route path="tours/add" element={<AddTour />} />
           <Route path="tours/edit/:id" element={<EditTour />} />
           <Route path="users" element={<UserList />} />
-          <Route path="chat" element={<AdminChatPanel />} /> {/* 👈 THÊM DÒNG NÀY */}
+          <Route path="chat" element={<AdminChatPanel />} />
           <Route path="payments" element={<PaymentList />} />
+          <Route path="pricing" element={<PricingManager />} />
+          <Route path="/admin/login-history" element={<LoginHistory />} />
+
         </Route>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/" replace />} />

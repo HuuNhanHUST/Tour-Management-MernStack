@@ -1,0 +1,87 @@
+.pricing-details {
+  margin-top: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  background-color: #f9f9f9;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.pricing-details:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  border-color: #d0d0d0;
+}
+
+.pricing-details h5 {
+  color: var(--heading-color);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.pricing-details .accordion-item {
+  border: 1px solid #dee2e6;
+  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.pricing-details .accordion-item:hover {
+  border-color: var(--secondary-color);
+  transform: translateY(-2px);
+}
+
+.pricing-details .accordion-header {
+  background-color: #fff;
+}
+
+.pricing-details .accordion-button {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+}
+
+.pricing-details .accordion-button:not(.collapsed) {
+  background-color: rgba(var(--secondary-color-rgb), 0.05);
+  color: var(--secondary-color);
+}
+
+.pricing-details .accordion-body {
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.pricing-details table {
+  margin-bottom: 0;
+}
+
+.pricing-details .table th {
+  background-color: rgba(var(--secondary-color-rgb), 0.1);
+  font-weight: 500;
+}
+
+.pricing-details .badge {
+  font-weight: 500;
+  padding: 0.4em 0.7em;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.pricing-details .list-group-item {
+  padding: 0.5rem 0;
+  background: transparent;
+}
+
+/* Responsive adjustments */
+@media only screen and (max-width: 768px) {
+  .pricing-details {
+    padding: 0.75rem;
+  }
+  
+  .pricing-details .table {
+    font-size: 0.85rem;
+  }
+}

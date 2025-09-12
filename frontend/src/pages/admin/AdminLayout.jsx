@@ -3,6 +3,8 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../../assets/images/logo.png";
+import UserStatusList from "../../components/UserStatusList"; // hoặc đúng path của bạn
+
 import {
   RiDashboardLine,
   RiUserLine,
@@ -98,6 +100,14 @@ const AdminLayout = () => {
           <li className="nav-item">
             <Link
               className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
+              to="/admin/pricing"
+            >
+              <RiBankCardLine color="#000" size={20} /> Quản lý giá
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
               to="/admin/users"
             >
               <RiUserLine color="#000" size={20} /> User Manager
@@ -120,8 +130,25 @@ const AdminLayout = () => {
             </Link>
           </li>
         </ul>
+        <hr className="my-2" />
+
+  {/* 👇 Danh sách người dùng đang online */}
+  <div>
+    <h6 className="fw-bold text-dark">Online Users</h6>
+    <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+      <UserStatusList />
+    </div>
+  </div>
       </div>
 
+
+
+
+
+
+
+
+        
       {/* Right content */}
       <div className="flex-grow-1 d-flex flex-column">
         {/* Top bar */}

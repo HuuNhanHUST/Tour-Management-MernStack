@@ -4,11 +4,13 @@
   border: 1px solid rgb(229, 231, 235);
   position: sticky;
   top: 80px;
-  background-color: #fff; /* Added background color for contrast */
+  background-color: #fff;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.05);
 }
 
 .booking__top {
-  padding-top: 2rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid rgb(229, 231, 235);
   display: flex;
   align-items: center;
@@ -38,14 +40,43 @@
 }
 
 .booking__form {
-  padding-top: 2rem;
+  padding-top: 1rem;
 }
 
 .booking__form h5 {
   margin-bottom: 1rem;
   font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+
+.booking__form h6 {
+  font-size: 1rem;
   font-weight: 600;
   color: var(--heading-color);
+}
+
+.booking-section {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--secondary-color);
+}
+
+.tour-date-info {
+  background-color: #f5f5f5;
+  padding: 0.8rem 1rem;
+  border-radius: 0.3rem;
+  border-left: 3px solid #0b2727;
+}
+
+.guest-info {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 0.3rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
 }
 
 .booking__form input {
@@ -66,9 +97,7 @@
 
 .booking__info-form {
   padding: 1rem;
-  border: 1px solid rgb(229, 231, 235);
   border-radius: 0.5rem;
-  background-color: #f9f9f9; /* Background color to distinguish the form area */
 }
 
 /* Style cho dropdown chọn tỉnh, huyện, xã */
@@ -104,40 +133,58 @@
 }
 
 .booking__bottom {
-  margin-top: 1rem;
-  font-size: 0.9rem; /* Smaller text */
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+}
+
+.booking__bottom .list-group {
+  margin-bottom: 1.5rem;
+}
+
+.booking__bottom h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .booking__bottom li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid rgb(229, 231, 235);
-  font-size: 0.9rem; /* Smaller font for each item */
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
 }
 
 .booking__bottom li h5,
 .booking__bottom li span {
   color: var(--text-color);
   font-weight: 500;
+  margin: 0;
 }
 
 .booking__bottom li span {
-  text-align: right; /* Align price to the right */
+  text-align: right;
+  font-weight: 600;
+}
+
+.booking__bottom .total {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
 }
 
 .total h5,
 .total span {
-  color: var(--secondary-color) !important; /* Accent color for totals */
+  color: var(--secondary-color) !important;
   font-weight: 700 !important;
   font-size: 1.1rem !important;
 }
 
 .booking__bottom .btn {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
-  padding: 1rem 0;
+  padding: 0.8rem 0;
   background-color: var(--primary-color);
   color: #fff;
   border: none;
@@ -148,4 +195,22 @@
 
 .booking__bottom .btn:hover {
   background-color: var(--secondary-color);
+}
+
+.booking__bottom .btn-danger {
+  background-color: #e1184e; /* MoMo color */
+}
+
+.booking__bottom .btn-danger:hover {
+  background-color: #c01042;
+}
+
+/* Chi tiết giá */
+.pricing-details {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #eee;
+  padding: 1rem;
+  background-color: #f9f9f9;
 }

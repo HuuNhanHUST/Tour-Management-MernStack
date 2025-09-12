@@ -6,17 +6,31 @@ const TourList = () => {
   const [tours, setTours] = useState([]);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:4000/api/v1/tour/all", {
-        withCredentials: true,
-      })
-      .then((res) => {
-        setTours(res.data.data);
-      })
-      .catch((err) => {
+    // Add loading state management
+    const fetchTours = async () => {
+      try {
+        const response = await axios.get("http://localhost:4000/api/v1/tour/all", {
+          withCredentials: true,
+        });
+        
+        if (response.data && Array.isArray(response.data.data)) {
+          // Sort tours by start date (most recent first)
+          const sortedTours = response.data.data.sort((a, b) => 
+            new Date(b.startDate) - new Date(a.startDate)
+          );
+          setTours(sortedTours);
+          console.log("Loaded tours:", sortedTours);
+        } else {
+          console.error("Invalid tour data format:", response.data);
+          alert("Định dạng dữ liệu tour không hợp lệ!");
+        }
+      } catch (err) {
         console.error("❌ Lỗi khi tải danh sách tour:", err);
         alert("Không thể tải danh sách tour!");
-      });
+      }
+    };
+    
+    fetchTours();
   }, []);
 
   const handleDelete = async (id) => {
@@ -36,7 +50,7 @@ const TourList = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("vi-VN");
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "numeric", year: "numeric" });
   };
 
   const isExpired = (endDate) => {
@@ -135,7 +149,12 @@ const TourList = () => {
         Danh sách Tour
       </h3>
 
-      <div className="d-flex justify-content-end">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <small className="text-muted">
+            {tours.length} tours được tìm thấy
+          </small>
+        </div>
         <Link to="/admin/tours/add" className="add-tour-btn">
           + Thêm Tour
         </Link>
@@ -183,7 +202,7 @@ const TourList = () => {
                       <td>{tour.city}</td>
                       <td>{formatDate(tour.startDate)}</td>
                       <td>{formatDate(tour.endDate)}</td>
-                      <td>{tour.price.toLocaleString("vi-VN")}đ</td>
+                      <td>${tour.price.toLocaleString()}</td>
                       <td>
                         {expired ? (
                           <span className="text-danger fw-bold">Đã kết thúc</span>

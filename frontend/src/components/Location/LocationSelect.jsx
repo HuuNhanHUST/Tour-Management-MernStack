@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { BASE_URL } from "../../utils/config.js";
 
 const LocationSelect = ({ onChange }) => {
   const [provinces, setProvinces] = useState([]);
@@ -29,7 +30,7 @@ const LocationSelect = ({ onChange }) => {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/v1/location/provinces");
+        const res = await axios.get(`${BASE_URL}/location/provinces`);
         setProvinces(res.data);
       } catch (error) {
         console.error("Lấy tỉnh thất bại", error);
@@ -47,7 +48,7 @@ const LocationSelect = ({ onChange }) => {
     }
     const fetchDistricts = async () => {
       try {
-        const res = await axios.get(`http://localhost:4000/api/v1/location/districts/${selectedProvince}`);
+        const res = await axios.get(`${BASE_URL}/location/districts/${selectedProvince}`);
         setDistricts(res.data);
       } catch (error) {
         console.error("Lấy huyện thất bại", error);
@@ -65,7 +66,7 @@ const LocationSelect = ({ onChange }) => {
     }
     const fetchWards = async () => {
       try {
-        const res = await axios.get(`http://localhost:4000/api/v1/location/wards/${selectedDistrict}`);
+        const res = await axios.get(`${BASE_URL}/location/wards/${selectedDistrict}`);
         setWards(res.data);
       } catch (error) {
         console.error("Lấy xã thất bại", error);

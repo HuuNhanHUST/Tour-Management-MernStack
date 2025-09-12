@@ -29,6 +29,30 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    guests: [
+      {
+        fullName: { type: String, required: true },
+        age: { type: Number, required: true },
+        guestType: { 
+          type: String, 
+          enum: ["adult", "child", "infant", "senior", "student"],
+          required: true
+        },
+        price: { type: Number, required: true },
+        discounts: [{
+          name: { type: String },
+          amount: { type: Number }
+        }],
+        surcharges: [{
+          name: { type: String },
+          amount: { type: Number }
+        }]
+      }
+    ],
+    singleRoomCount: {
+      type: Number,
+      default: 0
+    },
     phone: {
       type: String,
       required: true,
@@ -42,6 +66,19 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       default: 0
     },
+    basePrice: {
+      type: Number,
+      required: true,
+      default: 100000,  // Set a higher default value to prevent validation errors
+    },
+    appliedDiscounts: [{
+      name: { type: String },
+      amount: { type: Number }
+    }],
+    appliedSurcharges: [{
+      name: { type: String },
+      amount: { type: Number }
+    }],
     paymentMethod: {
       type: String,
       default: "Cash", // hoặc "MoMo"

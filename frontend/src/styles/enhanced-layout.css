@@ -1,0 +1,114 @@
+.tour-details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.tour__info {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.tour__info:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.tour-info-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.info-icon {
+  font-size: 1.75rem;
+  color: var(--secondary-color);
+  margin-right: 1rem;
+}
+
+.tour-info-header h4 {
+  font-weight: 700;
+  margin: 0;
+  color: var(--heading-color);
+  font-size: 1.25rem;
+}
+
+/* Itinerary styling */
+.itinerary-day {
+  position: relative;
+  padding-left: 2rem;
+  padding-bottom: 1.5rem;
+  border-left: 2px dashed var(--secondary-color);
+}
+
+.itinerary-day:last-child {
+  border-left: none;
+  padding-bottom: 0;
+}
+
+.itinerary-day::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  background-color: var(--secondary-color);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(var(--secondary-color-rgb), 0.2);
+}
+
+.itinerary-day h6 {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--heading-color);
+  margin-bottom: 0.75rem;
+}
+
+.itinerary-day p {
+  color: var(--text-color);
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+
+/* List styling for services */
+.services-list {
+  padding-left: 0.25rem;
+  margin-bottom: 0;
+  list-style: none;
+}
+
+.services-list li {
+  margin-bottom: 0.75rem;
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.services-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--secondary-color);
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .tour__info {
+    padding: 1.25rem;
+  }
+  
+  .tour-info-header {
+    margin-bottom: 1rem;
+  }
+  
+  .info-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+  }
+}

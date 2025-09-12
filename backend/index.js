@@ -6,10 +6,9 @@ import cookieParser from "cookie-parser";
 import session from "express-session";
 import passport from "./utils/passportFacebook.js";
 
-import http from "http"; // ✅ Thêm
-import { Server } from "socket.io"; // ✅ Thêm
+import http from "http";
+import { Server } from "socket.io";
 
-// Import routes
 import authRoute from './router/auth.js';
 import tourRoute from './router/tour.js';
 import userRoute from './router/user.js';
@@ -20,67 +19,110 @@ import dashboardRoute from "./router/dashboard.js";
 import chatRoute from "./router/chat.js";
 import locationRoute from "./router/location.js";
 import favoriteRoute from './router/favorite.js';
-
+import userStatusRoute from './router/userStatus.js';
+import loginHistoryRoute from './router/loginHistory.js';
+import pricingRoute from './router/pricing.js';
+import UserStatus from './models/UserStatus.js';
 
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 
-// ✅ Tạo HTTP Server để tích hợp Socket.IO
 const server = http.createServer(app);
 
-// Tạo socket server với CORS cho frontend
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // hoặc domain frontend
+    origin: "http://localhost:3000",
     credentials: true,
   },
 });
 
-// Map lưu trữ người dùng online (tuỳ chọn)
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   console.log("🟢 New socket connected:", socket.id);
 
-  // Join room chatRoomId (userId)
+  const userId = socket.handshake.query.userId;
+  console.log("👁 userId from socket:", userId);
+
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    onlineUsers.set(userId, socket.id);
+    console.log(`✅ User ${userId} online`);
+
+    UserStatus.findOneAndUpdate(
+      { userId },
+      {
+        isOnline: true,
+        lastSeen: new Date(),
+        socketId: socket.id,
+      },
+      { upsert: true, new: true }
+    )
+      .then((doc) => {
+        console.log("💾 Updated user status:", doc);
+        // ✅ Gửi thông báo realtime đến tất cả clients
+        io.emit("userStatusUpdate", {
+          userId,
+          isOnline: true,
+          lastSeen: doc.lastSeen,
+        });
+      })
+      .catch((err) => console.error("❌ Mongo update error:", err));
+  } else {
+    console.warn("⚠️ Không có userId hợp lệ từ client.");
+  }
+
   socket.on("joinRoom", (chatRoomId) => {
     socket.join(chatRoomId);
     console.log(`✅ Socket ${socket.id} joined room ${chatRoomId}`);
-    onlineUsers.set(chatRoomId.toString(), socket.id);
   });
 
-  // Nhận tin nhắn từ client và phát tới room (ngoại trừ socket gửi)
   socket.on("sendMessage", (message) => {
     const { chatRoomId, senderId, text } = message;
     console.log(`📩 Message in room ${chatRoomId} from ${senderId}: ${text}`);
-
-    // Phát cho tất cả trong room ngoại trừ socket gửi
     socket.to(chatRoomId).emit("receiveMessage", message);
   });
 
-  // Xử lý ngắt kết nối
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("🔴 Socket disconnected:", socket.id);
-    // Xoá user khỏi danh sách online
-    for (const [key, value] of onlineUsers.entries()) {
-      if (value === socket.id) {
-        onlineUsers.delete(key);
-        console.log(`❌ Removed user ${key} from onlineUsers`);
+    for (const [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+        console.log(`❌ Removed user ${userId} from online`);
+
+        await UserStatus.findOneAndUpdate(
+          { userId },
+          {
+            isOnline: false,
+            lastSeen: new Date(),
+            socketId: null,
+          },
+          { new: true }
+        )
+          .then((doc) => {
+            // ✅ Gửi cập nhật offline cho tất cả client
+            io.emit("userStatusUpdate", {
+              userId,
+              isOnline: false,
+              lastSeen: doc.lastSeen,
+            });
+          })
+          .catch((err) =>
+            console.error("❌ Mongo update error (disconnect):", err)
+          );
+
         break;
       }
     }
   });
 });
 
-
-// ✅ CORS cho frontend truy cập (localhost:3000)
+// CORS
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true
 }));
 
-// ✅ Header cho cookies
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Credentials", "true");
   next();
@@ -89,7 +131,6 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Session cho Passport
 app.use(session({
   secret: 'facebooklogin_secret',
   resave: false,
@@ -98,7 +139,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Kết nối MongoDB
 mongoose.set("strictQuery", false);
 const connectDB = async () => {
   try {
@@ -112,10 +152,7 @@ const connectDB = async () => {
   }
 };
 
-
-
-// ✅ Đăng ký các route RESTful
-
+// ROUTES
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/tour', tourRoute);
 app.use('/api/v1/user', userRoute);
@@ -123,22 +160,20 @@ app.use('/api/v1/review', reviewRoute);
 app.use('/api/v1/booking', bookingRoute);
 app.use('/api/v1/dashboard', dashboardRoute);
 app.use('/api/v1/chat', chatRoute);
-app.use("/api/v1/payment", paymentRoute);
-app.use("/api/v1/location", locationRoute);
+app.use('/api/v1/payment', paymentRoute);
+app.use('/api/v1/location', locationRoute);
 app.use('/api/v1/users', favoriteRoute);
-
-
-// ✅ Route test
+app.use('/api/user-status', userStatusRoute);
+app.use('/api/login-history', loginHistoryRoute);
+app.use('/api/v1/pricing', pricingRoute);
 app.get("/", (req, res) => {
   res.send("✅ API đang hoạt động");
 });
 
-// ✅ Khởi động server kèm Socket.IO
+// START SERVER
 server.listen(port, () => {
   connectDB();
   console.log(`🚀 Server + Socket.IO running at http://localhost:${port}`);
 });
 
-
-
-export { io }; // Nếu bạn cần dùng ở controller
+export { io };

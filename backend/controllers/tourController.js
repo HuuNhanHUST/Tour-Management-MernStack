@@ -161,7 +161,7 @@ export const deleteTour = async (req, res) => {
   }
 };
 
-// ✅ Lấy 1 Tour
+// ✅ Lấy 1 Tour và các tour tương tự
 export const getSingleTour = async (req, res) => {
   const id = req.params.id;
   try {
@@ -169,7 +169,46 @@ export const getSingleTour = async (req, res) => {
     if (!tour) {
       return res.status(404).json({ success: false, message: "Không tìm thấy tour" });
     }
-    res.status(200).json({ success: true, data: tour });
+
+    // Tìm các tour tương tự dựa vào city hoặc loại tour
+    let similarTours = [];
+    
+    // Nếu có city, tìm tour có cùng thành phố
+    if (tour.city) {
+      similarTours = await Tour.find({
+        _id: { $ne: id }, // Loại trừ tour hiện tại
+        $or: [
+          // Tìm chính xác city
+          { city: tour.city }, 
+          // Tìm city chứa từ khóa
+          { city: { $regex: new RegExp(tour.city, 'i') } }, 
+          // Tìm city là một phần của city hiện tại (ngược lại)
+          ...(tour.city.includes(',') 
+            ? [{ city: { $regex: new RegExp(tour.city.split(',')[0].trim(), 'i') } }] 
+            : []),
+          // Tìm trong address
+          { address: { $regex: new RegExp(tour.city, 'i') } }
+        ]
+      }).limit(3);
+    }
+    
+    // Nếu không tìm thấy tour tương tự dựa trên city, thử tìm dựa trên các tiêu chí khác
+    if (similarTours.length === 0) {
+      // Tìm các tour có giá tương tự (+/- 30%)
+      similarTours = await Tour.find({
+        _id: { $ne: id },
+        price: { 
+          $gte: tour.price * 0.7, 
+          $lte: tour.price * 1.3 
+        }
+      }).limit(3);
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      data: tour,
+      similarTours: similarTours
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: "Không thể lấy dữ liệu tour" });
   }

@@ -10,6 +10,7 @@ import Register from '../pages/Register';
 import SearchResultList from '../pages/SearchResultList';
 import ThankYou from '../pages/ThankYou';
 import SavedTours from '../pages/SavedTours';
+import PaymentHistory from '../pages/PaymentHistory';
 
 const Routers = () => {
   return (
@@ -24,6 +25,7 @@ const Routers = () => {
       <Route path='/thank-you' element={<ThankYou />} />
       <Route path='/tours/search' element={<SearchResultList />} />
       <Route path="/saved-tours" element={<SavedTours />} />
+      <Route path="/payment-history" element={<PaymentHistory />} />
     </Routes>
   );
 };

@@ -10,6 +10,19 @@ import {
 } from "reactstrap";
 import { BASE_URL } from "../../../utils/config";
 import { AuthContext } from "../../../context/AuthContext";
+import { useSocket } from "../../../context/SocketContext"; // ✅ Thêm dòng này để sử dụng socket
+
+const formatLastSeen = (timestamp) => {
+  if (!timestamp) return "N/A";
+  const date = new Date(timestamp);
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
 
 const UserList = () => {
   const { user, loading: authLoading } = useContext(AuthContext);
@@ -19,8 +32,7 @@ const UserList = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  console.log("🔁 UserList re-render");
+  const socket = useSocket(); // ✅ Dùng socket context
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -28,10 +40,7 @@ const UserList = () => {
       const res = await axios.get(`${BASE_URL}/user`, {
         withCredentials: true,
       });
-
       const newUsers = res.data.data || [];
-      console.log("Fetched users:", newUsers);
-
       setUsers(newUsers);
     } catch (err) {
       console.error("❌ Lỗi fetch users:", err.message);
@@ -42,9 +51,19 @@ const UserList = () => {
   }, []);
 
   useEffect(() => {
-    console.log("useEffect fetchUsers chạy");
     fetchUsers();
   }, [fetchUsers]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleStatusUpdate = ({ userId, isOnline, lastSeen }) => {
+      setUsers(prev => prev.map(u =>
+        u._id === userId ? { ...u, isOnline, lastSeen: lastSeen || u.lastSeen } : u
+      ));
+    };
+    socket.on("userStatusUpdate", handleStatusUpdate);
+    return () => socket.off("userStatusUpdate", handleStatusUpdate);
+  }, [socket]);
 
   const toggleRole = async (id, currentRole) => {
     if (user._id === id) {
@@ -170,10 +189,7 @@ const UserList = () => {
         `}
       </style>
 
-      <h3 className="title-3d">
-        Quản lý Người dùng
-      </h3>
-
+       <h3 className="title-3d">Quản lý Người dùng</h3>
       <div className="filter-section d-flex justify-content-between align-items-center mb-4">
         <Input
           type="text"
@@ -182,16 +198,9 @@ const UserList = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Dropdown
-          isOpen={dropdownOpen}
-          toggle={() => setDropdownOpen(!dropdownOpen)}
-        >
+        <Dropdown isOpen={dropdownOpen} toggle={() => setDropdownOpen(!dropdownOpen)}>
           <DropdownToggle caret>
-            {filterRole === "all"
-              ? "Tất cả"
-              : filterRole === "admin"
-              ? "Admin"
-              : "User"}
+            {filterRole === "all" ? "Tất cả" : filterRole === "admin" ? "Admin" : "User"}
           </DropdownToggle>
           <DropdownMenu>
             <DropdownItem onClick={() => setFilterRole("all")}>Tất cả</DropdownItem>
@@ -200,7 +209,6 @@ const UserList = () => {
           </DropdownMenu>
         </Dropdown>
       </div>
-
       <div className="table-container">
         <div className="table-responsive">
           <Table className="table table-custom">
@@ -211,13 +219,14 @@ const UserList = () => {
                 <th>Username</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-muted text-center py-4">
+                  <td colSpan="7" className="text-muted text-center py-4">
                     Không có người dùng nào
                   </td>
                 </tr>
@@ -244,13 +253,21 @@ const UserList = () => {
                     <td>{u.username}</td>
                     <td>{u.email}</td>
                     <td>
-                      <span
-                        className={`badge bg-${
-                          u.role === "admin" ? "danger" : "secondary"
-                        }`}
-                      >
+                      <span className={`badge bg-${u.role === "admin" ? "danger" : "secondary"}`}>
                         {u.role}
                       </span>
+                    </td>
+                    <td>
+                      {u.isOnline ? (
+                        <span className="badge bg-success">Online</span>
+                      ) : (
+                        <div>
+                          <span className="badge bg-secondary d-block">Offline</span>
+                          <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>
+                            {formatLastSeen(u.lastSeen)}
+                          </small>
+                        </div>
+                      )}
                     </td>
                     <td>
                       <button

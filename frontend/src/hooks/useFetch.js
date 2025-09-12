@@ -18,7 +18,7 @@ const useFetch = (url) => {
         }
 
         const result = await res.json();
-        setData(result.data); // Nếu API trả về { success, message, data }
+        setData(result); // Trả về toàn bộ phản hồi
         setLoading(false);
         
       } catch (err) {

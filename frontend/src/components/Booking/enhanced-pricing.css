@@ -1,0 +1,66 @@
+.rule-type-badge {
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.7rem !important;
+  padding: 0.3rem 0.6rem !important;
+}
+
+/* Pricing Callout */
+.pricing-callout {
+  background-color: #f8f9fa;
+  border-left: 4px solid #17a2b8;
+  padding: 0.8rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.pricing-callout i {
+  color: #17a2b8;
+  font-size: 1.1rem;
+  margin-right: 0.5rem;
+}
+
+/* Custom styling for tour pricing section */
+.tour__pricing-details {
+  margin-top: 1rem;
+}
+
+/* Enhanced table styling */
+.pricing-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+.pricing-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.pricing-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+}
+
+.pricing-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pricing-table tr:hover td {
+  background-color: #f8f9fa;
+}

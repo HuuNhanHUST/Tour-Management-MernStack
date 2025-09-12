@@ -1,0 +1,106 @@
+.pricing-manager-card {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: none;
+}
+
+.pricing-table table {
+  border-radius: 8px;
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #dee2e6;
+}
+
+.pricing-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #495057;
+  vertical-align: middle;
+}
+
+.rule-details {
+  max-width: 350px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.rule-details::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rule-details::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+.empty-state {
+  color: #6c757d;
+}
+
+/* Animation for adding new rules */
+@keyframes highlight {
+  0% { background-color: rgba(40, 167, 69, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.highlight-new {
+  animation: highlight 2s ease-in-out;
+}
+
+/* Modal styling */
+.modal-header {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border-radius: 10px 10px 0 0;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+/* Form styling */
+.form-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.form-select, .form-control {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  padding: 0.5rem 1rem;
+}
+
+.form-select:focus, .form-control:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+}
+
+/* Badge styling */
+.badge {
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+/* Button styling */
+.btn-light {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-light:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rule-details {
+    max-width: 100%;
+  }
+}

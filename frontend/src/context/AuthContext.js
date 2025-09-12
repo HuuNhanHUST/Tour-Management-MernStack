@@ -43,10 +43,18 @@ export const AuthContextProvider = ({ children }) => {
           });
 
           if (res.data?.data && isMounted) {
-            const fixedUser = {
-              ...res.data.data,
-              _id: res.data.data._id || res.data.data.id,
-            };
+           const rawUser = res.data?.data;
+
+if (!rawUser || (!rawUser._id && !rawUser.id)) {
+  dispatch({ type: "LOGOUT" });
+  return;
+}
+
+const fixedUser = {
+  ...rawUser,
+  _id: rawUser._id ?? rawUser.id
+};
+
             dispatch({ type: "LOGIN_SUCCESS", payload: fixedUser });
           } else {
             dispatch({ type: "LOGOUT" });

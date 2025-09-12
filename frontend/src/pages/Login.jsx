@@ -48,7 +48,12 @@ const Login = () => {
         return;
       }
 
-      dispatch({ type: "LOGIN_SUCCESS", payload: result.data });
+      const fixedUser = {
+  ...result.data,
+  _id: result.data._id ?? result.data.id
+};
+console.log("✔️ User saved to localStorage:", fixedUser); // Thêm log
+dispatch({ type: "LOGIN_SUCCESS", payload: fixedUser });
       alert("Đăng nhập thành công!");
 
       const searchParams = new URLSearchParams(location.search);

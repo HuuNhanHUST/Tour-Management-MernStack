@@ -13,12 +13,14 @@ const Tour = () => {
 
   // ✅ Gọi API lấy tour theo page
   const {
-    data: tours,
+    data: toursData,
     loading,
     error,
   } = useFetch(`${BASE_URL}/tour?page=${page}`);
+  const tours = toursData?.data;
 
-  const { data: tourCount } = useFetch(`${BASE_URL}/tour/search/getTourCount`);
+  const { data: tourCountData } = useFetch(`${BASE_URL}/tour/search/getTourCount`);
+  const tourCount = tourCountData?.data;
 
   useEffect(() => {
     const pages = Math.ceil(tourCount / 8); // mỗi trang 8 tour

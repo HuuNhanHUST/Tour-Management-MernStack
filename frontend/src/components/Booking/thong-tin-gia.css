@@ -1,0 +1,102 @@
+.thong-tin-gia-accordion {
+  margin-top: 1.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
+}
+
+.thong-tin-gia-header {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.thong-tin-gia-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.thong-tin-gia-icon {
+  color: var(--secondary-color);
+  font-size: 1.1rem;
+}
+
+.thong-tin-gia-content {
+  padding: 1rem;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.thong-tin-gia-item {
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 0.75rem;
+}
+
+.thong-tin-gia-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.thong-tin-gia-item-title {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phan-loai-tuoi {
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.bracket-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.bracket-row:last-child {
+  border-bottom: none;
+}
+
+.bracket-type {
+  font-weight: 500;
+}
+
+.bracket-age {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.bracket-discount {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.collapsed .expand-icon {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.expand-icon {
+  transform: rotate(90deg);
+  transition: transform 0.3s ease;
+}

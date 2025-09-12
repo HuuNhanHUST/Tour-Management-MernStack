@@ -1,0 +1,133 @@
+.booking__price-details {
+  margin-top: 1.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.price-details-header {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.price-details-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.price-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.price-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.price-detail-row:last-child {
+  border-bottom: none;
+}
+
+.guest-price-row {
+  background-color: #f8f9fa;
+}
+
+.price-label {
+  font-weight: 500;
+  color: var(--heading-color);
+}
+
+.price-value {
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.guest-type-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.guest-name {
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+.guest-type {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.original-price {
+  font-size: 0.85rem;
+  color: #6c757d;
+  text-decoration: line-through;
+  margin-right: 0.5rem;
+}
+
+.discount-badge {
+  background-color: #28a745;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.surcharge-badge {
+  background-color: #dc3545;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.price-modifier-row {
+  background-color: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #e9ecef;
+  font-weight: 600;
+}
+
+.discount-row {
+  color: #28a745;
+}
+
+.surcharge-row {
+  color: #dc3545;
+}
+
+.total-row {
+  font-size: 1.1rem;
+  font-weight: 700;
+  background-color: #f8f9fa;
+  border-top: 1px dashed #dee2e6;
+  padding: 1rem;
+}
+
+.service-fee-row {
+  background-color: #f0f3f6;
+}
+
+@media (max-width: 768px) {
+  .price-detail-row {
+    padding: 0.6rem 0.8rem;
+  }
+  
+  .guest-name {
+    font-size: 0.9rem;
+  }
+  
+  .guest-type {
+    font-size: 0.8rem;
+  }
+}

@@ -1,36 +1,46 @@
 // backend/router/location.js
 import express from "express";
-import axios from "axios";
+import { provinces, getDistrictsOfProvince, getWardsOfDistrict } from "../data/vietnamProvinces.js";
 
 const router = express.Router();
 
-// Lấy danh sách tỉnh/thành (depth=1)
-router.get("/provinces", async (req, res) => {
+// Lấy danh sách tỉnh/thành từ dữ liệu cập nhật mới
+router.get("/provinces", (req, res) => {
   try {
-    const response = await axios.get("https://provinces.open-api.vn/api/?depth=1");
-    res.json(response.data);
+    // Sử dụng dữ liệu đã cập nhật mới
+    res.json(provinces);
   } catch (err) {
     res.status(500).json({ message: "Lấy tỉnh thất bại" });
   }
 });
 
-// Lấy districts của tỉnh (depth=2)
-router.get("/districts/:provinceCode", async (req, res) => {
+// Lấy districts của tỉnh từ dữ liệu cập nhật
+router.get("/districts/:provinceCode", (req, res) => {
   try {
     const { provinceCode } = req.params;
-    const response = await axios.get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-    res.json(response.data.districts);
+    // Sử dụng hàm helper để lấy quận/huyện từ dữ liệu cập nhật
+    const districts = getDistrictsOfProvince(provinceCode);
+    if (districts && districts.length > 0) {
+      res.json(districts);
+    } else {
+      res.status(404).json({ message: "Không tìm thấy tỉnh/thành phố" });
+    }
   } catch (err) {
     res.status(500).json({ message: "Lấy huyện thất bại" });
   }
 });
 
-// Lấy wards của huyện
-router.get("/wards/:districtCode", async (req, res) => {
+// Lấy wards của huyện từ dữ liệu cập nhật
+router.get("/wards/:districtCode", (req, res) => {
   try {
     const { districtCode } = req.params;
-    const response = await axios.get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-    res.json(response.data.wards);
+    // Sử dụng hàm helper để lấy xã/phường từ dữ liệu cập nhật
+    const wards = getWardsOfDistrict(districtCode);
+    if (wards && wards.length > 0) {
+      res.json(wards);
+    } else {
+      res.status(404).json({ message: "Không tìm thấy quận/huyện" });
+    }
   } catch (err) {
     res.status(500).json({ message: "Lấy xã thất bại" });
   }

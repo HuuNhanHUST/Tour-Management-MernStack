@@ -1,11 +1,12 @@
 import express from 'express';
+import { getLoginHistory } from "../controllers/userController.js";
 import {
   createUser,
   updateUser,
   deleteUser,
   getSingleUser,
   getAllUsers
-} from '../controllers/userController.js';
+} from '../controllers/userController.js' ;
 
 const router = express.Router();
 import { verifyAdmin, verifyUser } from '../utils/verifyToken.js';
@@ -23,5 +24,5 @@ router.put('/:id',verifyUser, updateUser);
 router.delete('/:id',verifyUser, deleteUser);
 router.get('/:id',verifyUser, getSingleUser);
 router.get('/',verifyAdmin, getAllUsers);
-
+router.get("/login-history", verifyAdmin, getLoginHistory);
 export default router;
