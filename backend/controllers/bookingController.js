@@ -7,6 +7,9 @@ export const createBooking = async (req, res) => {
   try {
     // Log the entire request body for debugging
     console.log("📦 Booking request received:", JSON.stringify(req.body, null, 2));
+    console.log("📦 Guests from request body:", req.body.guests);
+    console.log("📦 Guests array length:", req.body.guests?.length);
+    console.log("📦 Guest size from request:", req.body.guestSize);
     
     const {
       tourId,
@@ -148,13 +151,21 @@ export const createBooking = async (req, res) => {
     }
     
     // Ensure each guest has a valid price
-    const validatedGuests = guests.map(guest => ({
-      ...guest,
-      price: Number(guest.price) || validBasePrice
-    }));
+    const validatedGuests = guests.map((guest, index) => {
+      console.log(`Processing guest ${index + 1}:`, guest);
+      
+      const validatedGuest = {
+        ...guest,
+        price: Number(guest.price) || validBasePrice
+      };
+      
+      console.log(`Validated guest ${index + 1}:`, validatedGuest);
+      return validatedGuest;
+    });
     
     console.log("✅ Creating booking with basePrice:", validBasePrice);
-    console.log("✅ First guest price:", validatedGuests[0].price);
+    console.log("✅ All validated guests:", validatedGuests);
+    console.log("✅ Validated guests count:", validatedGuests.length);
     
     // Final validation check for basePrice
     if (!validBasePrice || validBasePrice <= 0 || isNaN(validBasePrice)) {
@@ -208,6 +219,8 @@ export const createBooking = async (req, res) => {
       const savedBooking = await newBooking.save();
       
       console.log("✅ Booking saved successfully:", savedBooking._id);
+      console.log("✅ Saved booking guests:", savedBooking.guests);
+      console.log("✅ Saved booking guests count:", savedBooking.guests?.length);
       
       res.status(200).json({
         success: true,

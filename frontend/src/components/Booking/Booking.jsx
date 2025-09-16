@@ -1,8 +1,10 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
 import "./booking.css";
 import "./price-details.css";
+import "../shared/notification.css";
 import LocationSelect from "../Location/LocationSelect";
 import ThongTinGiaTour from "./ThongTinGiaTour";
+import NotificationManager from "../shared/NotificationManager";
 import {
   Form,
   FormGroup,
@@ -69,26 +71,43 @@ const Booking = ({ tour, avgRating }) => {
       
       try {
         setIsCalculatingPrice(true);
-        const response = await axios.post(
-          `${BASE_URL}/pricing/calculate`,
-          {
-            tourId: tour._id,
-            bookingDate: new Date(),
-            guests: guests,
-            singleRoomCount: singleRoomCount
-          },
-          { withCredentials: true }
-        );
         
-        console.log("Pricing calculation response:", response.data);
-        
-        if (response.data.success && response.data.data) {
-          console.log("Base price from API:", response.data.data.basePrice);
-          console.log("Guest prices:", response.data.data.guestPrices);
-          setPricingData(response.data.data);
-        } else {
-          console.error("API returned success=false or missing data");
-        }
+      console.log("=== PRICING CALCULATION DEBUG ===");
+      console.log("Tour ID:", tour._id);
+      console.log("Guests data being sent:", guests.map(g => ({
+        fullName: g.fullName,
+        age: g.age,
+        guestType: g.guestType,
+        originalGuestType: g.originalGuestType
+      })));
+      console.log("Single room count:", singleRoomCount);
+      
+      const response = await axios.post(
+        `${BASE_URL}/pricing/calculate`,
+        {
+          tourId: tour._id,
+          bookingDate: new Date(),
+          guests: guests,
+          singleRoomCount: singleRoomCount
+        },
+        { withCredentials: true }
+      );
+      
+      console.log("=== PRICING API RESPONSE ===");
+      console.log("Full response:", response.data);
+      console.log("Success:", response.data.success);
+      console.log("Data:", response.data.data);
+      
+      if (response.data.success && response.data.data) {
+        console.log("=== PRICING BREAKDOWN ===");
+        console.log("Base price from API:", response.data.data.basePrice);
+        console.log("Guest prices breakdown:", response.data.data.guestPrices);
+        console.log("Applied rules:", response.data.data.appliedRules);
+        console.log("Total amount:", response.data.data.totalAmount);
+        setPricingData(response.data.data);
+      } else {
+        console.error("API returned success=false or missing data");
+      }
       } catch (error) {
         console.error("Lỗi tính giá:", error);
       } finally {
@@ -110,13 +129,20 @@ const Booking = ({ tour, avgRating }) => {
     setLocation(loc);
   }, []);
 
-  const serviceFee = 10;
-  const totalAmount = pricingData ? pricingData.totalAmount + serviceFee : Number(price) * Number(credentials.guestSize) + serviceFee;
+  // Tính tổng tiền không bao gồm phí dịch vụ cố định
+  const totalAmount = pricingData ? pricingData.totalAmount : Number(price) * Number(credentials.guestSize);
+  
+  // Debug totalAmount calculation
+  console.log("=== TOTAL AMOUNT CALCULATION ===");
+  console.log("PricingData available:", !!pricingData);
+  console.log("PricingData.totalAmount:", pricingData?.totalAmount);
+  console.log("Fallback calculation (price * guestSize):", Number(price) * Number(credentials.guestSize));
+  console.log("Final totalAmount:", totalAmount);
 
   // Thêm khách vào danh sách
   const addGuest = () => {
     if (guests.length >= availableSlots) {
-      alert(`Không thể thêm quá ${availableSlots} khách`);
+      NotificationManager.warning(`Không thể thêm quá ${availableSlots} khách`);
       return;
     }
     setGuests([...guests, { fullName: "", age: 30, guestType: "adult" }]);
@@ -126,7 +152,7 @@ const Booking = ({ tour, avgRating }) => {
   // Xóa khách khỏi danh sách
   const removeGuest = (index) => {
     if (guests.length <= 1) {
-      alert("Phải có ít nhất 1 khách");
+      NotificationManager.warning("Phải có ít nhất 1 khách");
       return;
     }
     const newGuests = [...guests];
@@ -139,6 +165,25 @@ const Booking = ({ tour, avgRating }) => {
   const updateGuest = (index, field, value) => {
     const newGuests = [...guests];
     newGuests[index][field] = value;
+    
+    // Auto-detect guest type based on age
+    if (field === 'age') {
+      const age = parseInt(value) || 0;
+      let autoGuestType = 'adult'; // default
+      
+      if (age >= 0 && age < 2) {
+        autoGuestType = 'infant';
+      } else if (age >= 2 && age < 18) {
+        autoGuestType = 'child';
+      } else if (age >= 18 && age < 65) {
+        autoGuestType = 'adult';
+      } else if (age >= 65) {
+        autoGuestType = 'senior';
+      }
+      
+      newGuests[index]['guestType'] = autoGuestType;
+      console.log(`Guest ${index + 1} age ${age} -> auto-detected type: ${autoGuestType}`);
+    }
     
     // If changing age or guest type, we need to recalculate pricing
     if (field === 'age' || field === 'guestType') {
@@ -154,28 +199,28 @@ const Booking = ({ tour, avgRating }) => {
     e.preventDefault();
 
     if (!user) {
-      alert("Vui lòng đăng nhập để đặt tour!");
+      NotificationManager.warning("Vui lòng đăng nhập để đặt tour!");
       navigate("/login");
       return;
     }
 
     if (isTourExpired) {
-      alert("Tour này đã kết thúc. Không thể đặt nữa.");
+      NotificationManager.error("Tour này đã kết thúc. Không thể đặt nữa.");
       return;
     }
 
     if (isTourOngoing) {
-      alert("Tour đang diễn ra. Không thể đặt lúc này.");
+      NotificationManager.warning("Tour đang diễn ra. Không thể đặt lúc này.");
       return;
     }
 
     if (credentials.guestSize <= 0) {
-      alert("Số lượng người phải lớn hơn 0.");
+      NotificationManager.warning("Số lượng người phải lớn hơn 0.");
       return;
     }
 
     if (credentials.guestSize > availableSlots) {
-      alert(`Chỉ còn lại ${availableSlots} chỗ trống.`);
+      NotificationManager.error(`Chỉ còn lại ${availableSlots} chỗ trống.`);
       return;
     }
 
@@ -185,7 +230,7 @@ const Booking = ({ tour, avgRating }) => {
       !location.ward.code ||
       !addressDetail.trim()
     ) {
-      alert("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
+      NotificationManager.warning("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
       return;
     }
 
@@ -193,54 +238,76 @@ const Booking = ({ tour, avgRating }) => {
       // Kiểm tra thông tin khách
       const invalidGuests = guests.filter(g => !g.fullName || g.age === null);
       if (invalidGuests.length > 0) {
-        alert("Vui lòng nhập đầy đủ thông tin cho tất cả khách hàng");
+        NotificationManager.warning("Vui lòng nhập đầy đủ thông tin cho tất cả khách hàng");
         return;
       }
 
       // Kiểm tra thông tin liên hệ
       if (!credentials.fullName || !credentials.phone) {
-        alert("Vui lòng nhập đầy đủ họ tên và số điện thoại liên hệ");
+        NotificationManager.warning("Vui lòng nhập đầy đủ họ tên và số điện thoại liên hệ");
         return;
       }
 
-      // Ensure we have a valid base price
-      const validBasePrice = Number(pricingData?.basePrice || price || 0);
+      // Use totalAmount from pricing calculation - this includes all discounts and surcharges
+      const finalTotalAmount = Math.floor(Number(totalAmount));
       
-      // Ensure base price is a positive number
-      const finalBasePrice = isNaN(validBasePrice) || validBasePrice <= 0 ? Number(price) || 1000000 : validBasePrice;
+      console.log("=== BOOKING DEBUG START ===");
+      console.log("Display totalAmount:", totalAmount);
+      console.log("Final total amount for booking:", finalTotalAmount);
+      console.log("Guests array before booking:", guests);
+      console.log("Guests array length:", guests.length);
+      console.log("Credentials guestSize:", credentials.guestSize);
+      console.log("Each guest details:");
+      guests.forEach((guest, index) => {
+        console.log(`  Guest ${index + 1}:`, guest);
+      });
       
-      console.log("Using base price for booking:", finalBasePrice);
-      
-      // Ensure we have a valid price even if all else fails
-      if (isNaN(finalBasePrice) || finalBasePrice <= 0) {
-        alert("Không thể xác định giá cho tour này. Vui lòng thử lại hoặc liên hệ với quản trị viên.");
+      // Check if guests array is empty
+      if (!guests || guests.length === 0) {
+        alert(`DEBUG: Guests array is empty! Length: ${guests?.length || 0}`);
+        NotificationManager.error("Vui lòng thêm thông tin khách vào danh sách trước khi đặt tour.");
         return;
       }
       
-      // Prepare guest data with prices
+      // Check if guests count matches guestSize
+      if (guests.length !== Number(credentials.guestSize)) {
+        alert(`DEBUG: Guests count mismatch! Guests: ${guests.length}, GuestSize: ${credentials.guestSize}`);
+        NotificationManager.error(`Số lượng khách trong danh sách (${guests.length}) không khớp với số lượng đã chọn (${credentials.guestSize}). Vui lòng kiểm tra lại.`);
+        return;
+      }
+      
+      // Validate that we have a reasonable total amount
+      if (isNaN(finalTotalAmount) || finalTotalAmount <= 0) {
+        NotificationManager.error("Không thể xác định giá cho tour này. Vui lòng thử lại hoặc liên hệ với quản trị viên.");
+        return;
+      }
+      
+      // Prepare guest data with prices from pricing API
       const guestsWithPrices = guests.map((guest, index) => {
-        // Get price from pricing API response if available
-        let guestPrice = finalBasePrice; // Default to base price
+        let guestPrice = Number(price); // Default fallback
         
-        // If we have pricing data from the API, use that
+        // Use pricing API data if available
         if (pricingData && pricingData.guestPrices && pricingData.guestPrices[index]) {
-          const apiPrice = Number(pricingData.guestPrices[index].finalPrice);
-          guestPrice = isNaN(apiPrice) || apiPrice <= 0 ? finalBasePrice : apiPrice;
-          console.log(`Guest ${index + 1} price from API:`, guestPrice);
-        } else {
-          console.log(`Guest ${index + 1} using default price:`, guestPrice);
+          guestPrice = Number(pricingData.guestPrices[index].finalPrice);
+          console.log(`Guest ${index + 1} final price:`, guestPrice);
         }
+        
+        console.log(`Processing guest ${index + 1}:`, {
+          originalGuest: guest,
+          finalPrice: guestPrice
+        });
         
         return {
           ...guest,
           price: guestPrice,
-          discounts: [],
-          surcharges: []
+          discounts: pricingData?.guestPrices?.[index]?.discounts || [],
+          surcharges: pricingData?.guestPrices?.[index]?.surcharges || []
         };
       });
-
-      // Calculate total amount if not available from pricing API
-      const calculatedTotalAmount = guestsWithPrices.reduce((sum, guest) => sum + guest.price, 0) + serviceFee;
+      
+      console.log("=== GUESTS WITH PRICES ===");
+      console.log("GuestsWithPrices array:", guestsWithPrices);
+      console.log("GuestsWithPrices length:", guestsWithPrices.length);
       
       const bookingData = {
         userId: credentials.userId,
@@ -252,8 +319,8 @@ const Booking = ({ tour, avgRating }) => {
         singleRoomCount: singleRoomCount,
         tourId: tour._id,
         tourName: tour.title,
-        totalAmount: Number(totalAmount) || calculatedTotalAmount,
-        basePrice: finalBasePrice,
+        totalAmount: finalTotalAmount,
+        basePrice: pricingData?.basePrice || Number(price),
         appliedDiscounts: pricingData?.appliedDiscounts || [],
         appliedSurcharges: pricingData?.appliedSurcharges || [],
         paymentMethod: "Cash",
@@ -265,7 +332,17 @@ const Booking = ({ tour, avgRating }) => {
       };
       
       // Log the full booking data for debugging
-      console.log("Full booking data being sent:", JSON.stringify(bookingData));
+      console.log("=== FINAL BOOKING DATA ===");
+      console.log("Full booking data being sent:", JSON.stringify(bookingData, null, 2));
+      console.log("Booking data guests field:", bookingData.guests);
+      console.log("Guests array stringified:", JSON.stringify(bookingData.guests));
+
+      // Additional validation before sending
+      if (!bookingData.guests || bookingData.guests.length === 0) {
+        alert("CRITICAL: bookingData.guests is empty before sending to backend!");
+        console.error("CRITICAL: bookingData.guests is empty:", bookingData.guests);
+        return;
+      }
 
       console.log("Đang gửi dữ liệu đặt tour:", bookingData);
 
@@ -275,10 +352,10 @@ const Booking = ({ tour, avgRating }) => {
       );
 
       if (res.data.success) {
-        alert("Đặt tour thành công!");
+        NotificationManager.success("Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
         navigate("/thank-you");
       } else {
-        alert("Đặt tour thất bại: " + res.data.message);
+        NotificationManager.error("Đặt tour thất bại: " + res.data.message);
       }
     } catch (error) {
       console.error("Lỗi đặt tour:", error);
@@ -302,34 +379,34 @@ const Booking = ({ tour, avgRating }) => {
         errorMessage = "Không nhận được phản hồi từ máy chủ. Vui lòng kiểm tra kết nối.";
       }
       
-      alert(errorMessage);
+      NotificationManager.error(errorMessage);
     }
   };
 
   const handleMomoPayment = async () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để thanh toán!");
+      NotificationManager.warning("Vui lòng đăng nhập để thanh toán!");
       navigate("/login");
       return;
     }
 
     if (isTourExpired) {
-      alert("Tour đã kết thúc. Không thể thanh toán.");
+      NotificationManager.error("Tour đã kết thúc. Không thể thanh toán.");
       return;
     }
 
     if (isTourOngoing) {
-      alert("Tour đang diễn ra. Không thể thanh toán.");
+      NotificationManager.warning("Tour đang diễn ra. Không thể thanh toán.");
       return;
     }
 
     if (credentials.guestSize <= 0) {
-      alert("Số lượng người phải lớn hơn 0.");
+      NotificationManager.warning("Số lượng người phải lớn hơn 0.");
       return;
     }
 
     if (credentials.guestSize > availableSlots) {
-      alert(`Chỉ còn lại ${availableSlots} chỗ trống.`);
+      NotificationManager.error(`Chỉ còn lại ${availableSlots} chỗ trống.`);
       return;
     }
 
@@ -339,59 +416,59 @@ const Booking = ({ tour, avgRating }) => {
       !location.ward.code ||
       !addressDetail.trim()
     ) {
-      alert("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
+      NotificationManager.warning("Vui lòng chọn đầy đủ địa chỉ tỉnh, huyện, xã và nhập chi tiết địa chỉ.");
       return;
     }
     
     // Kiểm tra thông tin liên hệ
     if (!credentials.fullName || !credentials.phone) {
-      alert("Vui lòng nhập đầy đủ họ tên và số điện thoại liên hệ");
+      NotificationManager.warning("Vui lòng nhập đầy đủ họ tên và số điện thoại liên hệ");
       return;
     }
     
     // Kiểm tra thông tin khách
     const invalidGuests = guests.filter(g => !g.fullName || g.age === null);
     if (invalidGuests.length > 0) {
-      alert("Vui lòng nhập đầy đủ thông tin cho tất cả khách hàng");
+      NotificationManager.warning("Vui lòng nhập đầy đủ thông tin cho tất cả khách hàng");
       return;
     }
 
-    const validAmount = Math.max(1000, Math.floor(Number(totalAmount)));
+    // Confirm payment
+    NotificationManager.confirm(
+      `Bạn có chắc chắn muốn thanh toán ${totalAmount.toLocaleString()} VND cho tour này qua MoMo?`,
+      () => {
+        processMomoPayment();
+      }
+    );
+  };
+
+  const processMomoPayment = async () => {
+    // Use the exact totalAmount from pricing calculation
+    const finalAmount = Math.max(1000, Math.floor(Number(totalAmount)));
+    
+    console.log("=== MOMO PAYMENT DEBUG ===");
+    console.log("Display totalAmount:", totalAmount);
+    console.log("Final amount for MoMo:", finalAmount);
+    console.log("Pricing data:", pricingData);
 
     try {
-      // Ensure we have a valid base price
-      const validBasePrice = Number(pricingData?.basePrice || price || 0);
-      
-      // Ensure base price is a positive number
-      const finalBasePrice = isNaN(validBasePrice) || validBasePrice <= 0 ? Number(price) : validBasePrice;
-      
-      console.log("Using base price for MoMo payment:", finalBasePrice);
-      
-      // Prepare guest data with prices
+      // Prepare guest data with prices from pricing API
       const guestsWithPrices = guests.map((guest, index) => {
-        // Get price from pricing API response if available
-        let guestPrice = finalBasePrice; // Default to base price
+        let guestPrice = Number(price); // Default fallback
         
-        // If we have pricing data from the API, use that
+        // Use pricing API data if available
         if (pricingData && pricingData.guestPrices && pricingData.guestPrices[index]) {
-          const apiPrice = Number(pricingData.guestPrices[index].finalPrice);
-          guestPrice = isNaN(apiPrice) || apiPrice <= 0 ? finalBasePrice : apiPrice;
-          console.log(`Guest ${index + 1} price for MoMo:`, guestPrice);
-        } else {
-          console.log(`Guest ${index + 1} using default price for MoMo:`, guestPrice);
+          guestPrice = Number(pricingData.guestPrices[index].finalPrice);
+          console.log(`Guest ${index + 1} final price:`, guestPrice);
         }
         
         return {
           ...guest,
           price: guestPrice,
-          discounts: [],
-          surcharges: []
+          discounts: pricingData?.guestPrices?.[index]?.discounts || [],
+          surcharges: pricingData?.guestPrices?.[index]?.surcharges || []
         };
       });
-      
-      // Calculate total amount if needed
-      const calculatedTotalAmount = guestsWithPrices.reduce((sum, guest) => sum + guest.price, 0) + serviceFee;
-      const finalAmount = Math.max(1000, Math.floor(calculatedTotalAmount || Number(totalAmount) || validAmount));
 
       const paymentData = {
         amount: finalAmount,
@@ -407,7 +484,7 @@ const Booking = ({ tour, avgRating }) => {
         departureDate: startDate,
         guests: guestsWithPrices,
         singleRoomCount: singleRoomCount,
-        basePrice: finalBasePrice,
+        basePrice: pricingData?.basePrice || Number(price),
         appliedDiscounts: pricingData?.appliedDiscounts || [],
         appliedSurcharges: pricingData?.appliedSurcharges || [],
 
@@ -427,7 +504,7 @@ const Booking = ({ tour, avgRating }) => {
       if (response.data && response.data.payUrl) {
         window.location.href = response.data.payUrl;
       } else {
-        alert("Không thể tạo thanh toán MoMo: " + (response.data?.message || "Vui lòng thử lại sau."));
+        NotificationManager.error("Không thể tạo thanh toán MoMo: " + (response.data?.message || "Vui lòng thử lại sau."));
       }
     } catch (error) {
       console.error("❌ Lỗi gọi MoMo:", error);
@@ -440,7 +517,7 @@ const Booking = ({ tour, avgRating }) => {
         errorMessage = "Không nhận được phản hồi từ máy chủ. Vui lòng kiểm tra kết nối.";
       }
       
-      alert(errorMessage);
+      NotificationManager.error(errorMessage);
     }
   };
 
@@ -660,6 +737,14 @@ const Booking = ({ tour, avgRating }) => {
                   const discountPercent = hasDiscount ? 
                     Math.round((1 - guestPrice.finalPrice / guestPrice.basePrice) * 100) : 0;
                   
+                  console.log(`Guest ${index} pricing:`, {
+                    basePrice: guestPrice.basePrice,
+                    finalPrice: guestPrice.finalPrice,
+                    hasDiscount,
+                    discountPercent,
+                    guestType: guests[index]?.guestType
+                  });
+                  
                   let guestTypeLabel = "";
                   switch(guests[index]?.guestType) {
                     case 'adult': guestTypeLabel = "adult, từ 18 tuổi"; break;
@@ -680,10 +765,10 @@ const Booking = ({ tour, avgRating }) => {
                         {hasDiscount && (
                           <>
                             <span className="discount-badge">-{discountPercent}%</span>
-                            <span className="original-price">${guestPrice.basePrice.toLocaleString()}</span>
+                            <span className="original-price">{guestPrice.basePrice.toLocaleString()} VND</span>
                           </>
                         )}
-                        <span className="price-value">${guestPrice.finalPrice.toLocaleString()}</span>
+                        <span className="price-value">{guestPrice.finalPrice.toLocaleString()} VND</span>
                       </div>
                     </div>
                   );
@@ -697,7 +782,7 @@ const Booking = ({ tour, avgRating }) => {
                     {pricingData.appliedDiscounts.map((discount, index) => (
                       <div key={index} className="price-detail-row discount-row">
                         <span className="price-label">{discount.name}</span>
-                        <span className="price-value">-${discount.amount.toFixed(2)}</span>
+                        <span className="price-value">-{discount.amount.toLocaleString()} VND</span>
                       </div>
                     ))}
                   </>
@@ -711,7 +796,7 @@ const Booking = ({ tour, avgRating }) => {
                     {pricingData.appliedSurcharges.map((surcharge, index) => (
                       <div key={index} className="price-detail-row surcharge-row">
                         <span className="price-label">{surcharge.name}</span>
-                        <span className="price-value">+${surcharge.amount.toFixed(2)}</span>
+                        <span className="price-value">+{surcharge.amount.toLocaleString()} VND</span>
                       </div>
                     ))}
                   </>
@@ -724,14 +809,9 @@ const Booking = ({ tour, avgRating }) => {
                   </div>
                 )}
                 
-                <div className="price-detail-row service-fee-row">
-                  <span className="price-label">Phí dịch vụ</span>
-                  <span className="price-value">${serviceFee.toLocaleString()}</span>
-                </div>
-                
                 <div className="price-detail-row total-row">
                   <span className="price-label">Tổng cộng</span>
-                  <span className="price-value">${totalAmount.toLocaleString()}</span>
+                  <span className="price-value">{totalAmount.toLocaleString()} VND</span>
                 </div>
               </div>
             </div>

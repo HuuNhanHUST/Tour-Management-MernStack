@@ -1,0 +1,187 @@
+/* Custom Notifications */
+.custom-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+  font-family: 'Poppins', sans-serif;
+  border-left: 4px solid;
+}
+
+.custom-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.custom-notification.success {
+  background-color: #f0f9ff;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+.custom-notification.error {
+  background-color: #fef2f2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.custom-notification.warning {
+  background-color: #fffbeb;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.custom-notification.info {
+  background-color: #eff6ff;
+  border-left-color: #3b82f6;
+  color: #1e40af;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Confirmation Modal */
+.confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.confirmation-overlay.show {
+  opacity: 1;
+}
+
+.confirmation-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  min-width: 400px;
+  max-width: 500px;
+  transform: scale(0.9);
+  transition: transform 0.3s ease-in-out;
+}
+
+.confirmation-overlay.show .confirmation-modal {
+  transform: scale(1);
+}
+
+.confirmation-content {
+  padding: 24px;
+}
+
+.confirmation-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.confirmation-icon {
+  font-size: 24px;
+  color: #f59e0b;
+}
+
+.confirmation-header h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.confirmation-message {
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.confirmation-actions button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  min-width: 80px;
+}
+
+.btn-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-confirm {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #2563eb;
+}
+
+/* Multiple notifications stacking */
+.custom-notification:nth-child(n+2) {
+  top: calc(20px + (80px * var(--notification-index, 1)));
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .custom-notification {
+    right: 16px;
+    left: 16px;
+    min-width: auto;
+    max-width: none;
+    transform: translateY(-100%);
+  }
+  
+  .custom-notification.show {
+    transform: translateY(0);
+  }
+  
+  .confirmation-modal {
+    min-width: 320px;
+    margin: 16px;
+  }
+}

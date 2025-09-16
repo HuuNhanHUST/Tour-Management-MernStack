@@ -156,6 +156,16 @@ export const calculatePrice = async (req, res) => {
       singleRoomCount = 0 
     } = req.body;
     
+    console.log("=== PRICING CALCULATION BACKEND DEBUG ===");
+    console.log("Tour ID:", tourId);
+    console.log("Booking Date:", bookingDate);
+    console.log("Guests received:", guests.map(g => ({
+      fullName: g.fullName,
+      age: g.age,
+      guestType: g.guestType
+    })));
+    console.log("Single Room Count:", singleRoomCount);
+    
     if (!tourId || !bookingDate || !guests || guests.length === 0) {
       return res.status(400).json({
         success: false,
@@ -174,9 +184,16 @@ export const calculatePrice = async (req, res) => {
     
     // Get pricing rules for this tour
     const pricingRules = await PricingRule.find({ tourId, isActive: true });
+    console.log("Found pricing rules:", pricingRules.length);
+    console.log("Pricing rules details:", pricingRules.map(r => ({
+      name: r.name,
+      type: r.type,
+      ageBrackets: r.ageBrackets
+    })));
     
     // Initialize base price from tour price
     const basePrice = tour.price;
+    console.log("Base price:", basePrice);
     
     // Initialize pricing results
     const pricingResults = {
@@ -194,26 +211,47 @@ export const calculatePrice = async (req, res) => {
       const guestDiscounts = [];
       const guestSurcharges = [];
       
+      console.log(`\n=== Processing Guest: ${guest.fullName} ===`);
+      console.log(`Age: ${age}, Guest Type: ${guestType}`);
+      
       // Apply age bracket rules
       const ageBracketRules = pricingRules.filter(rule => 
         rule.type === "ageBracket" && rule.ageBrackets && rule.ageBrackets.length > 0
       );
       
+      console.log(`Found ${ageBracketRules.length} age bracket rules`);
+      
       for (const rule of ageBracketRules) {
+        console.log(`\nChecking rule: ${rule.name}`);
+        console.log(`Rule age brackets:`, rule.ageBrackets);
+        
         for (const bracket of rule.ageBrackets) {
+          console.log(`\nChecking bracket: ${bracket.name}`);
+          console.log(`Min Age: ${bracket.minAge}, Max Age: ${bracket.maxAge}`);
+          console.log(`Discount Type: ${bracket.discountType}, Value: ${bracket.discountValue}`);
+          
           // Check if guest falls within this age bracket
-          if (
-            (bracket.minAge === undefined || age >= bracket.minAge) && 
-            (bracket.maxAge === undefined || age <= bracket.maxAge) &&
-            (
-              bracket.name.toLowerCase() === guestType ||
-              (bracket.name.toLowerCase() === "adult" && guestType === "adult") ||
-              (bracket.name.toLowerCase() === "child" && guestType === "child") ||
-              (bracket.name.toLowerCase() === "infant" && guestType === "infant") ||
-              (bracket.name.toLowerCase() === "senior" && guestType === "senior") ||
-              (bracket.name.toLowerCase() === "student" && guestType === "student")
-            )
-          ) {
+          const ageMatches = (bracket.minAge === undefined || age >= bracket.minAge) && 
+                            (bracket.maxAge === undefined || age <= bracket.maxAge);
+          
+          console.log(`Age matches (${age} in ${bracket.minAge}-${bracket.maxAge}): ${ageMatches}`);
+          
+          // Improved guest type matching
+          const nameMatch = bracket.name?.toLowerCase() === guestType?.toLowerCase();
+          const typeMatches = nameMatch ||
+            (bracket.name?.toLowerCase().includes('lớn') && guestType === "adult") ||
+            (bracket.name?.toLowerCase().includes('adult') && guestType === "adult") ||
+            (bracket.name?.toLowerCase().includes('trẻ em') && guestType === "child") ||
+            (bracket.name?.toLowerCase().includes('child') && guestType === "child") ||
+            (bracket.name?.toLowerCase().includes('em bé') && guestType === "infant") ||
+            (bracket.name?.toLowerCase().includes('infant') && guestType === "infant") ||
+            (bracket.name?.toLowerCase().includes('cao tuổi') && guestType === "senior") ||
+            (bracket.name?.toLowerCase().includes('senior') && guestType === "senior") ||
+            (bracket.name?.toLowerCase().includes('student') && guestType === "student");
+          
+          console.log(`Type matches: ${typeMatches} (bracket: ${bracket.name}, guest: ${guestType})`);
+          
+          if (ageMatches && typeMatches) {
             let discountAmount = 0;
             
             if (bracket.discountType === "percentage") {
@@ -234,7 +272,12 @@ export const calculatePrice = async (req, res) => {
               amount: discountAmount
             });
             
+            console.log(`✅ APPLIED DISCOUNT: ${discountAmount} (${bracket.discountType})`);
+            console.log(`New guest price: ${guestPrice}`);
+            
             break; // Apply only one age bracket rule per guest
+          } else {
+            console.log(`❌ No match - Age: ${ageMatches}, Type: ${typeMatches}`);
           }
         }
       }

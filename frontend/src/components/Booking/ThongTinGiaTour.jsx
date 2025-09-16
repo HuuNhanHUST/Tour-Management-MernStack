@@ -8,15 +8,45 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Debug basePrice
+  console.log("ThongTinGiaTour received basePrice:", basePrice, typeof basePrice);
+  
+  // Normalize basePrice to handle different input types
+  const normalizedBasePrice = typeof basePrice === 'string' 
+    ? parseFloat(basePrice.replace(/[^0-9.-]/g, '')) || 0
+    : Number(basePrice) || 0;
+
   useEffect(() => {
     const fetchPricingRules = async () => {
       setLoading(true);
       try {
+        console.log("=== PRICING RULES DEBUG START ===");
+        console.log("Fetching pricing rules for tourId:", tourId);
+        
         const response = await axios.get(
           `${BASE_URL}/pricing/tour/${tourId}`,
           { withCredentials: true }
         );
-        setPricingRules(response.data.data || []);
+        
+        console.log("Full API Response:", response.data);
+        console.log("Pricing rules data:", response.data.data);
+        
+        const rules = response.data.data || [];
+        setPricingRules(rules);
+        
+        // Debug từng rule để hiểu cấu trúc
+        rules.forEach((rule, index) => {
+          console.log(`Rule ${index}:`, {
+            name: rule.name,
+            type: rule.type,
+            category: rule.category,
+            description: rule.description,
+            fullRule: rule
+          });
+        });
+        
+        console.log("=== PRICING RULES DEBUG END ===");
+        
       } catch (err) {
         console.error("Error fetching pricing rules:", err);
         setError("Không thể tải thông tin giá vé");
@@ -34,14 +64,32 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
   // Phân loại các loại quy tắc giá
   const ageBracketRule = pricingRules.find(rule => rule.type === 'ageBracket');
   const groupSizeRule = pricingRules.find(rule => rule.type === 'groupSize');
+  
+  // Seasonal rules: chỉ lấy những rule có type = 'seasonal'
   const seasonalRules = pricingRules.filter(rule => rule.type === 'seasonal');
-  const specialPromotions = pricingRules.filter(rule => rule.type === 'promotion' || rule.type === 'special');
+  
+  // Surcharge rules: lấy những rule có type = 'surcharge'
+  const surchargeRules = pricingRules.filter(rule => rule.type === 'surcharge');
+  
+  // Special promotions: chỉ lấy những rule có type = 'promotion'
+  const specialPromotions = pricingRules.filter(rule => {
+    return rule.type === 'promotion';
+  });
+  
+  console.log("All pricing rules:", pricingRules);
+  console.log("Age bracket rule:", ageBracketRule);
+  console.log("Seasonal rules:", seasonalRules);
+  console.log("Surcharge rules:", surchargeRules);
+  console.log("Special promotions found:", specialPromotions);
   
   // Phân loại các loại giá theo độ tuổi
   const renderAgeBrackets = () => {
     if (!ageBracketRule || !ageBracketRule.ageBrackets || ageBracketRule.ageBrackets.length === 0) {
       return null;
     }
+    
+    console.log("Age bracket rule:", ageBracketRule);
+    console.log("Base price:", basePrice);
     
     return (
       <div className="age-brackets-pricing">
@@ -51,6 +99,13 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
           const isChild = bracket.name?.toLowerCase().includes('trẻ em') || bracket.name?.toLowerCase().includes('child');
           
           let displayClass = isAdult ? "adult-bracket" : isSenior ? "senior-bracket" : isChild ? "child-bracket" : "";
+          
+          console.log(`Bracket ${idx}:`, {
+            name: bracket.name,
+            discountValue: bracket.discountValue,
+            discountType: bracket.discountType,
+            isAdult, isSenior, isChild
+          });
           
           return (
             <div key={idx} className={`age-price-row ${displayClass}`}>
@@ -73,10 +128,10 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
                       {bracket.discountType === 'percentage' ? `-${bracket.discountValue}%` : `-${bracket.discountValue.toLocaleString()} VND`}
                     </div>
                     <div className="calculated-price">
-                      {basePrice > 0 && (
+                      {normalizedBasePrice > 0 && (
                         bracket.discountType === 'percentage' 
-                        ? `${(basePrice * (1 - bracket.discountValue / 100)).toLocaleString()} VND`
-                        : `${(basePrice - bracket.discountValue).toLocaleString()} VND`
+                        ? `${Math.round(normalizedBasePrice * (1 - bracket.discountValue / 100)).toLocaleString()} VND`
+                        : `${Math.round(normalizedBasePrice - bracket.discountValue).toLocaleString()} VND`
                       )}
                     </div>
                   </div>
@@ -84,7 +139,7 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
                   <div className="price-display">
                     <div className="standard-tag">Giá gốc</div>
                     <div className="calculated-price">
-                      {basePrice > 0 && `${basePrice.toLocaleString()} VND`}
+                      {normalizedBasePrice > 0 && `${Math.round(normalizedBasePrice).toLocaleString()} VND`}
                     </div>
                   </div>
                 )}
@@ -123,10 +178,10 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
                       {group.discountType === 'percentage' ? `-${group.discountValue}%` : `-${group.discountValue.toLocaleString()} VND`}
                     </div>
                     <div className="calculated-price">
-                      {basePrice > 0 && (
+                      {normalizedBasePrice > 0 && (
                         group.discountType === 'percentage' 
-                        ? `${(basePrice * (1 - group.discountValue / 100)).toLocaleString()} VND`
-                        : `${(basePrice - group.discountValue).toLocaleString()} VND`
+                        ? `${(normalizedBasePrice * (1 - group.discountValue / 100)).toLocaleString()} VND`
+                        : `${(normalizedBasePrice - group.discountValue).toLocaleString()} VND`
                       )}
                     </div>
                   </div>
@@ -134,7 +189,7 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
                   <div className="price-display">
                     <div className="standard-tag">Giá gốc</div>
                     <div className="calculated-price">
-                      {basePrice > 0 && `${basePrice.toLocaleString()} VND`}
+                      {normalizedBasePrice > 0 && `${normalizedBasePrice.toLocaleString()} VND`}
                     </div>
                   </div>
                 )}
@@ -146,63 +201,100 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
     );
   };
 
-  // Hiển thị quy tắc giá theo mùa
+  // Hiển thị quy tắc giá theo mùa và phụ thu
   const renderSeasonalRules = () => {
-    if (!seasonalRules || seasonalRules.length === 0) {
+    const allSeasonalAndSurcharge = [...seasonalRules, ...surchargeRules];
+    
+    if (!allSeasonalAndSurcharge || allSeasonalAndSurcharge.length === 0) {
       return null;
     }
 
     return (
       <div className="seasonal-pricing">
-        {seasonalRules.map((rule, idx) => {
-          return (
-            <div key={idx} className="seasonal-price-row">
-              <div className="seasonal-price-info">
-                <div className="season-name">{rule.name || 'Mùa cao điểm'}</div>
-                {rule.startDate && rule.endDate && (
-                  <div className="season-period">
-                    {new Date(rule.startDate).toLocaleDateString('vi-VN')} - {new Date(rule.endDate).toLocaleDateString('vi-VN')}
-                  </div>
-                )}
+        {allSeasonalAndSurcharge.map((rule, idx) => {
+          // Xử lý seasonal rules
+          if (rule.type === 'seasonal' && rule.seasonalPricing && rule.seasonalPricing.length > 0) {
+            return rule.seasonalPricing.map((season, seasonIdx) => (
+              <div key={`${idx}-${seasonIdx}`} className="seasonal-price-row">
+                <div className="seasonal-price-info">
+                  <div className="season-name">{season.name || rule.name || 'Mùa cao điểm'}</div>
+                  {season.startDate && season.endDate && (
+                    <div className="season-period">
+                      {new Date(season.startDate).toLocaleDateString('vi-VN')} - {new Date(season.endDate).toLocaleDateString('vi-VN')}
+                    </div>
+                  )}
+                </div>
+                <div className="seasonal-price-value">
+                  {season.priceMultiplier > 1 ? (
+                    <div className="price-display">
+                      <div className="increase-tag">
+                        +{((season.priceMultiplier - 1) * 100).toFixed(0)}%
+                      </div>
+                      <div className="calculated-price increase-price">
+                        {normalizedBasePrice > 0 && `${(normalizedBasePrice * season.priceMultiplier).toLocaleString()} VND`}
+                      </div>
+                    </div>
+                  ) : season.priceMultiplier < 1 ? (
+                    <div className="price-display">
+                      <div className="discount-tag">
+                        -{((1 - season.priceMultiplier) * 100).toFixed(0)}%
+                      </div>
+                      <div className="calculated-price">
+                        {normalizedBasePrice > 0 && `${(normalizedBasePrice * season.priceMultiplier).toLocaleString()} VND`}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="price-display">
+                      <div className="standard-tag">Giá gốc</div>
+                      <div className="calculated-price">
+                        {normalizedBasePrice > 0 && `${normalizedBasePrice.toLocaleString()} VND`}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="seasonal-price-value">
-                {rule.adjustmentValue > 0 ? (
-                  <div className="price-display">
-                    <div className="increase-tag">
-                      {rule.adjustmentType === 'percentage' ? `+${rule.adjustmentValue}%` : `+${rule.adjustmentValue.toLocaleString()} VND`}
+            ));
+          }
+          
+          // Xử lý surcharge rules
+          if (rule.type === 'surcharge' && rule.surcharge) {
+            const surcharge = rule.surcharge;
+            return (
+              <div key={idx} className="seasonal-price-row">
+                <div className="seasonal-price-info">
+                  <div className="season-name">{surcharge.name || rule.name || 'Phụ thu'}</div>
+                  {rule.description && (
+                    <div className="season-description">{rule.description}</div>
+                  )}
+                </div>
+                <div className="seasonal-price-value">
+                  {surcharge.chargeValue > 0 ? (
+                    <div className="price-display">
+                      <div className="increase-tag">
+                        {surcharge.chargeType === 'percentage' ? `+${surcharge.chargeValue}%` : `+${surcharge.chargeValue.toLocaleString()} VND`}
+                      </div>
+                      <div className="calculated-price increase-price">
+                        {normalizedBasePrice > 0 && (
+                          surcharge.chargeType === 'percentage' 
+                          ? `${(normalizedBasePrice * (1 + surcharge.chargeValue / 100)).toLocaleString()} VND`
+                          : `${(normalizedBasePrice + surcharge.chargeValue).toLocaleString()} VND`
+                        )}
+                      </div>
                     </div>
-                    <div className="calculated-price increase-price">
-                      {basePrice > 0 && (
-                        rule.adjustmentType === 'percentage' 
-                        ? `${(basePrice * (1 + rule.adjustmentValue / 100)).toLocaleString()} VND`
-                        : `${(basePrice + rule.adjustmentValue).toLocaleString()} VND`
-                      )}
+                  ) : (
+                    <div className="price-display">
+                      <div className="standard-tag">Giá gốc</div>
+                      <div className="calculated-price">
+                        {normalizedBasePrice > 0 && `${normalizedBasePrice.toLocaleString()} VND`}
+                      </div>
                     </div>
-                  </div>
-                ) : rule.adjustmentValue < 0 ? (
-                  <div className="price-display">
-                    <div className="discount-tag">
-                      {rule.adjustmentType === 'percentage' ? `-${Math.abs(rule.adjustmentValue)}%` : `-${Math.abs(rule.adjustmentValue).toLocaleString()} VND`}
-                    </div>
-                    <div className="calculated-price">
-                      {basePrice > 0 && (
-                        rule.adjustmentType === 'percentage' 
-                        ? `${(basePrice * (1 + rule.adjustmentValue / 100)).toLocaleString()} VND`
-                        : `${(basePrice + rule.adjustmentValue).toLocaleString()} VND`
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="price-display">
-                    <div className="standard-tag">Giá gốc</div>
-                    <div className="calculated-price">
-                      {basePrice > 0 && `${basePrice.toLocaleString()} VND`}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          );
+            );
+          }
+          
+          return null;
         })}
       </div>
     );
@@ -231,25 +323,44 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
     return (
       <div className="special-promotions">
         {specialPromotions.map((promo, idx) => {
+          const promotion = promo.promotion || {};
           return (
             <div key={idx} className="promotion-price-row">
               <div className="promotion-price-info">
-                <div className="promotion-name">{promo.name || 'Khuyến mãi đặc biệt'}</div>
-                {promo.startDate && promo.endDate && (
+                <div className="promotion-name">{promotion.name || promo.name || 'Khuyến mãi đặc biệt'}</div>
+                {promotion.startDate && promotion.endDate && (
                   <div className="promotion-period">
-                    {new Date(promo.startDate).toLocaleDateString('vi-VN')} - {new Date(promo.endDate).toLocaleDateString('vi-VN')}
+                    {new Date(promotion.startDate).toLocaleDateString('vi-VN')} - {new Date(promotion.endDate).toLocaleDateString('vi-VN')}
                   </div>
                 )}
                 {promo.description && (
                   <div className="promotion-desc">{promo.description}</div>
                 )}
+                {promotion.daysBeforeDeparture && (
+                  <div className="promotion-condition">
+                    Đặt trước {promotion.daysBeforeDeparture} ngày
+                  </div>
+                )}
               </div>
               <div className="promotion-price-value">
-                <div className="special-promo-tag">
-                  {promo.discountValue ? 
-                    (promo.discountType === 'percentage' ? `-${promo.discountValue}%` : `-${promo.discountValue.toLocaleString()} VND`) : 
-                    'Khuyến mãi'}
-                </div>
+                {promotion.discountValue > 0 ? (
+                  <div className="price-display">
+                    <div className="discount-tag">
+                      {promotion.discountType === 'percentage' ? `-${promotion.discountValue}%` : `-${promotion.discountValue.toLocaleString()} VND`}
+                    </div>
+                    <div className="calculated-price">
+                      {normalizedBasePrice > 0 && (
+                        promotion.discountType === 'percentage' 
+                        ? `${(normalizedBasePrice * (1 - promotion.discountValue / 100)).toLocaleString()} VND`
+                        : `${(normalizedBasePrice - promotion.discountValue).toLocaleString()} VND`
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="special-promo-tag">
+                    Khuyến mãi
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -282,8 +393,8 @@ const ThongTinGiaTour = ({ tourId, basePrice = 0 }) => {
         </div>
       )}
       
-      {/* Phân loại theo mùa */}
-      {seasonalRules.length > 0 && (
+      {/* Phân loại theo mùa và phụ thu */}
+      {(seasonalRules.length > 0 || surchargeRules.length > 0) && (
         <div className="tour-pricing-section">
           <div className="tour-pricing-header">
             <i className="ri-calendar-event-line pricing-icon"></i>
