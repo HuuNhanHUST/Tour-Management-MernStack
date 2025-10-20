@@ -1,38 +1,44 @@
 import express from "express";
 import {
-  createBooking,
   getBooking,
   getAllBookings,
-
 } from "../controllers/bookingController.js";
+import Booking from "../models/Booking.js";
 
 import { verifyUser, verifyAdmin } from "../utils/verifyToken.js";
 
 const router = express.Router();
 
-// ❌ DEPRECATED: Endpoint này đã ngưng sử dụng
-// Vui lòng dùng POST /api/v1/payment/cash hoặc /api/v1/payment/momo
-router.post("/", verifyUser, (req, res) => {
-  console.warn("⚠️ DEPRECATED ENDPOINT CALLED: POST /booking");
-  console.warn("Request from user:", req.user?.id);
-  
-  return res.status(410).json({
-    success: false,
-    message: "⚠️ Endpoint này đã ngưng sử dụng. Vui lòng sử dụng:\n" +
-             "- POST /api/v1/payment/cash (cho thanh toán tiền mặt)\n" +
-             "- POST /api/v1/payment/momo (cho thanh toán MoMo)",
-    deprecated: true,
-    newEndpoints: {
-      cash: "/api/v1/payment/cash",
-      momo: "/api/v1/payment/momo"
-    }
-  });
-});
+// ℹ️ NOTE: Booking creation moved to payment router
+// Use POST /api/v1/payment/cash or POST /api/v1/payment/momo
 
+// ✅ Get single booking by ID (user can view their own booking)
 router.get("/:id", verifyUser, getBooking);
 
+// ✅ Get all bookings of current user
+router.get("/user/my-bookings", verifyUser, async (req, res) => {
+  try {
+    const bookings = await Booking.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .populate('tourId', 'title price city featured');
+    
+    res.status(200).json({
+      success: true,
+      message: "Lấy danh sách booking thành công",
+      count: bookings.length,
+      data: bookings
+    });
+  } catch (error) {
+    console.error("❌ Error getting user bookings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách booking",
+      error: error.message
+    });
+  }
+});
 
-// ✔️ Chỉ admin mới được truy cập danh sách toàn bộ booking
+// ✅ Admin: Get all bookings
 router.get("/", verifyAdmin, getAllBookings);
 
 export default router;

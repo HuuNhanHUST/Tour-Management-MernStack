@@ -11,6 +11,12 @@ import Tour from '../models/Tour.js';
 import User from '../models/User.js';
 import { io } from '../index.js';
 import { sendSuccessEmail } from '../utils/emailSender.js';
+import {
+  createBookingFromPayment,
+  updateBookingPaymentStatus,
+  updateTourSlots,
+  rollbackTourSlots
+} from '../controllers/bookingController.js';
 
 dotenv.config();
 const router = express.Router();
@@ -22,7 +28,7 @@ router.all('*', (req, res, next) => {
 
 
 // ✅ OPTION A: Simplified Cash payment endpoint
-// Create Booking first (single source of truth), then minimal Payment record
+// Uses bookingController to create Booking, then creates Payment
 router.post('/cash', async (req, res) => {
   const {
     userId, userEmail, fullName, phone,
@@ -35,75 +41,39 @@ router.post('/cash', async (req, res) => {
   } = req.body;
 
   try {
-    console.log("💵 [OPTION A] Cash payment request received:", {
+    console.log("💵 [Payment Router] Cash payment request:", {
       userId, tourId, guestSize, totalAmount
     });
 
-    // Validate tour exists
-    const tour = await Tour.findById(tourId);
-    if (!tour) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Tour không tồn tại" 
-      });
-    }
-
-    // Check slots availability
-    const availableSlots = tour.maxGroupSize - tour.currentBookings;
-    if (guestSize > availableSlots) {
-      return res.status(400).json({
-        success: false,
-        message: `Chỉ còn lại ${availableSlots} chỗ trống.`
-      });
-    }
-
-    // Validate required fields
-    if (!province?.code || !district?.code || !ward?.code || !addressDetail) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng nhập đầy đủ thông tin địa chỉ."
-      });
-    }
-
-    if (!guests || guests.length === 0 || guests.length !== guestSize) {
-      return res.status(400).json({
-        success: false,
-        message: "Thông tin khách không đầy đủ hoặc không khớp với số lượng khách."
-      });
-    }
-
-    // ✅ OPTION A STEP 1: Create Booking FIRST (single source of truth)
-    const newBooking = new Booking({
-      userId: new mongoose.Types.ObjectId(userId),
+    // ✅ STEP 1: Use bookingController to create Booking
+    const { booking, tour } = await createBookingFromPayment({
+      userId,
       userEmail,
-      tourId: tour._id,
-      tourName: tourName || tour.title,
       fullName,
       phone,
+      tourId,
+      tourName,
       guestSize,
       guests,
-      singleRoomCount: singleRoomCount || 0,
+      singleRoomCount,
       totalAmount,
       basePrice,
-      appliedDiscounts: appliedDiscounts || [],
-      appliedSurcharges: appliedSurcharges || [],
+      appliedDiscounts,
+      appliedSurcharges,
       paymentMethod: "Cash",
-      paymentStatus: "Confirmed", // ✅ Cash is auto-confirmed
-      bookAt: bookAt || new Date(),
+      paymentStatus: "Confirmed", // Cash is auto-confirmed
       province,
       district,
       ward,
-      addressDetail
+      addressDetail,
+      bookAt
     });
 
-    await newBooking.save();
-    console.log("✅ [OPTION A] Booking created (single source):", newBooking._id);
-
-    // ✅ OPTION A STEP 2: Create minimal Payment record (tracking only)
-    const orderId = `CASH_${Date.now()}_${newBooking._id}`;
+    // ✅ STEP 2: Create minimal Payment tracking
+    const orderId = `CASH_${Date.now()}_${booking._id}`;
     
     const newPayment = new Payment({
-      bookingId: newBooking._id,
+      bookingId: booking._id,
       orderId,
       amount: totalAmount,
       payType: "Cash",
@@ -112,21 +82,14 @@ router.post('/cash', async (req, res) => {
     });
 
     await newPayment.save();
-    console.log("✅ [OPTION A] Payment tracking created:", newPayment._id);
+    console.log("✅ [Payment Router] Payment tracking created:", newPayment._id);
 
-    // ✅ OPTION A STEP 3: Update tour slots
-    tour.currentBookings += guestSize;
-    await tour.save();
-    console.log("✅ Tour slots updated:", tour.currentBookings);
+    // ✅ STEP 3: Update tour slots using bookingController
+    await updateTourSlots(tourId, guestSize);
 
-    // ✅ OPTION A STEP 4: Send email confirmation
+    // ✅ STEP 4: Send email confirmation
     try {
-      await sendSuccessEmail(
-        userEmail,
-        orderId,
-        totalAmount,
-        fullName
-      );
+      await sendSuccessEmail(userEmail, orderId, totalAmount, fullName);
       console.log("✅ Email sent to:", userEmail);
     } catch (emailError) {
       console.error("⚠️ Email failed but booking successful:", emailError.message);
@@ -134,7 +97,7 @@ router.post('/cash', async (req, res) => {
 
     console.log("✅ Cash payment complete:", {
       paymentId: newPayment._id,
-      bookingId: newBooking._id
+      bookingId: booking._id
     });
 
     res.status(200).json({
@@ -142,22 +105,22 @@ router.post('/cash', async (req, res) => {
       message: "Đặt tour thành công! Vui lòng thanh toán tiền mặt khi nhận tour.",
       data: {
         payment: newPayment,
-        booking: newBooking
+        booking: booking
       }
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tạo thanh toán Cash:', error);
+    console.error('❌ [Payment Router] Cash payment error:', error.message);
     res.status(500).json({ 
       success: false,
-      message: 'Tạo thanh toán thất bại',
+      message: error.message || 'Tạo thanh toán thất bại',
       error: error.message 
     });
   }
 });
 
 
-// ✅ OPTION A: MoMo payment endpoint - Create Booking immediately, Payment for tracking
+// ✅ OPTION A: MoMo payment endpoint - Uses bookingController
 router.post('/momo', async (req, res) => {
   const {
     amount, orderId, orderInfo,
@@ -169,19 +132,11 @@ router.post('/momo', async (req, res) => {
   } = req.body;
 
   try {
-    console.log("💳 [OPTION A] MoMo payment request received:", {
+    console.log("💳 [Payment Router] MoMo payment request:", {
       userId, tourId, guestSize, amount
     });
 
-    const tour = await Tour.findById(tourId);
-    if (!tour) {
-      return res.status(404).json({ 
-        success: false,
-        message: "Tour không tồn tại" 
-      });
-    }
-
-    // Check slots (including pending bookings)
+    // Check pending bookings for this tour
     const pendingBookings = await Booking.aggregate([
       {
         $match: {
@@ -199,64 +154,40 @@ router.post('/momo', async (req, res) => {
     ]);
     
     const pendingQuantity = pendingBookings[0]?.totalPending || 0;
-    const availableSlots = tour.maxGroupSize - tour.currentBookings - pendingQuantity;
+    console.log(`📊 Pending MoMo bookings for tour: ${pendingQuantity}`);
 
-    if (guestSize > availableSlots) {
-      return res.status(400).json({
-        success: false,
-        message: `Tour đã hết chỗ hoặc chỉ còn lại ${availableSlots} chỗ do đang chờ thanh toán.`
-      });
-    }
-
-    // Validate required fields
-    if (!province?.code || !district?.code || !ward?.code || !addressDetail) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng nhập đầy đủ thông tin địa chỉ."
-      });
-    }
-
-    if (!guests || guests.length === 0 || guests.length !== guestSize) {
-      return res.status(400).json({
-        success: false,
-        message: "Thông tin khách không đầy đủ hoặc không khớp với số lượng khách."
-      });
-    }
-
+    // Get user email if not provided
     let finalEmail = email;
     if (!finalEmail) {
       const user = await User.findById(userId);
       finalEmail = user?.email || "";
     }
 
-    // ✅ OPTION A STEP 1: Create Booking FIRST (even before payment confirmation)
-    const newBooking = new Booking({
-      userId: new mongoose.Types.ObjectId(userId),
+    // ✅ STEP 1: Use bookingController to create Booking with Pending status
+    const { booking, tour } = await createBookingFromPayment({
+      userId,
       userEmail: finalEmail,
-      tourId: tour._id,
-      tourName: tour.title || tourName,
       fullName,
       phone,
+      tourId,
+      tourName,
       guestSize,
       guests,
-      singleRoomCount: singleRoomCount || 0,
+      singleRoomCount,
       totalAmount: amount,
       basePrice,
-      appliedDiscounts: appliedDiscounts || [],
-      appliedSurcharges: appliedSurcharges || [],
+      appliedDiscounts,
+      appliedSurcharges,
       paymentMethod: "MoMo",
-      paymentStatus: "Pending", // ✅ Will be updated by IPN
-      bookAt: new Date(),
+      paymentStatus: "Pending", // Will be updated by IPN
       province,
       district,
       ward,
-      addressDetail
+      addressDetail,
+      bookAt: new Date()
     });
 
-    await newBooking.save();
-    console.log("✅ [OPTION A] Booking created with Pending status:", newBooking._id);
-
-    // Generate MoMo request
+    // ✅ STEP 2: Generate MoMo payment request
     const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
     const rawAmount = amount.toString();
     const rawSignature =
@@ -286,9 +217,9 @@ router.post('/momo', async (req, res) => {
     const momoRes = await axios.post(process.env.MOMO_API_URL, requestBody);
     console.log("✅ MoMo API response:", momoRes.data);
 
-    // ✅ OPTION A STEP 2: Create minimal Payment tracking
+    // ✅ STEP 3: Create minimal Payment tracking
     const newPayment = new Payment({
-      bookingId: newBooking._id,
+      bookingId: booking._id,
       orderId,
       amount: Number(amount),
       status: 'Pending',
@@ -297,25 +228,25 @@ router.post('/momo', async (req, res) => {
     });
 
     await newPayment.save();
-    console.log("✅ [OPTION A] Payment tracking created with Pending status");
+    console.log("✅ [Payment Router] Payment tracking created with Pending status");
 
     res.status(200).json(momoRes.data);
     
   } catch (error) {
-    console.error('❌ Lỗi tạo thanh toán MoMo:', error.message);
+    console.error('❌ [Payment Router] MoMo payment error:', error.message);
     res.status(500).json({ 
       success: false,
-      message: 'Tạo thanh toán thất bại',
+      message: error.message || 'Tạo thanh toán thất bại',
       error: error.message 
     });
   }
 });
 
 
-// ✅ OPTION A: MoMo IPN handler - Update Booking & Payment status
+// ✅ OPTION A: MoMo IPN handler - Uses bookingController
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
-  console.log("📩 [OPTION A] IPN từ MoMo:", JSON.stringify(data, null, 2));
+  console.log("📩 [Payment Router] IPN từ MoMo:", JSON.stringify(data, null, 2));
 
   try {
     // Find payment by orderId
@@ -343,20 +274,13 @@ router.post('/momo-notify', async (req, res) => {
       payment.momoTransId = data.transId;
       payment.paidAt = new Date();
       await payment.save();
-      console.log("✅ [OPTION A] Payment status updated to Confirmed");
+      console.log("✅ [Payment Router] Payment status updated to Confirmed");
 
-      // Update Booking status
-      booking.paymentStatus = "Confirmed";
-      await booking.save();
-      console.log("✅ [OPTION A] Booking status updated to Confirmed");
+      // Update Booking status using bookingController
+      await updateBookingPaymentStatus(booking._id, "Confirmed");
 
-      // Update tour slots
-      const tour = await Tour.findById(booking.tourId);
-      if (tour) {
-        tour.currentBookings += booking.guestSize;
-        await tour.save();
-        console.log("✅ Tour slots updated:", tour.currentBookings);
-      }
+      // Update tour slots using bookingController
+      await updateTourSlots(booking.tourId, booking.guestSize);
 
       // Send success email
       try {
@@ -388,10 +312,10 @@ router.post('/momo-notify', async (req, res) => {
       payment.status = "Failed";
       await payment.save();
       
-      booking.paymentStatus = "Failed";
-      await booking.save();
+      // Update booking status using bookingController
+      await updateBookingPaymentStatus(booking._id, "Failed");
       
-      console.log("✅ [OPTION A] Payment & Booking marked as Failed");
+      console.log("✅ [Payment Router] Payment & Booking marked as Failed");
       return res.status(200).json({ message: "Payment failed, statuses updated" });
     }
 
@@ -452,7 +376,7 @@ router.get('/all', async (req, res) => {
   }
 });
 
-// ✅ OPTION A: Admin update payment status
+// ✅ OPTION A: Admin update payment status - Uses bookingController
 router.put('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -490,16 +414,21 @@ router.put('/:id/status', async (req, res) => {
     }
 
     const oldStatus = payment.status;
-    console.log(`📝 [OPTION A] Admin updating payment ${id}: ${oldStatus} → ${status}`);
+    console.log(`📝 [Payment Router] Admin updating payment ${id}: ${oldStatus} → ${status}`);
     
-    // Update both Payment and Booking status
+    // Update Payment status
     payment.status = status;
-    booking.paymentStatus = status;
     
     if (status === "Confirmed" && oldStatus !== "Confirmed") {
       payment.paidAt = new Date();
       
-      // Send confirmation email if needed
+      // Update Booking status using bookingController
+      await updateBookingPaymentStatus(booking._id, "Confirmed");
+      
+      // Update tour slots using bookingController
+      await updateTourSlots(booking.tourId, booking.guestSize);
+      
+      // Send confirmation email
       if (booking.userEmail) {
         try {
           await sendSuccessEmail(
@@ -517,30 +446,33 @@ router.put('/:id/status', async (req, res) => {
       console.log("✅ Payment & Booking confirmed by admin");
     }
     
-    // ✅ OPTION A: If rejecting/cancelling payment
+    // ✅ If rejecting/cancelling payment - rollback tour slots
     if ((status === "Failed" || status === "Cancelled") && oldStatus === "Confirmed") {
-      console.log("⚠️ [OPTION A] Rolling back confirmed payment to", status);
+      console.log("⚠️ [Payment Router] Rolling back confirmed payment to", status);
       
-      // Rollback tour slots
-      const tour = await Tour.findById(booking.tourId);
-      if (tour) {
-        tour.currentBookings -= booking.guestSize;
-        await tour.save();
-        console.log("✅ Restored tour slots:", tour.currentBookings);
-      }
+      // Update Booking status using bookingController
+      await updateBookingPaymentStatus(booking._id, status);
+      
+      // Rollback tour slots using bookingController
+      await rollbackTourSlots(booking.tourId, booking.guestSize);
+    } else if (status === "Failed" || status === "Cancelled") {
+      // Just update booking status for non-confirmed bookings
+      await updateBookingPaymentStatus(booking._id, status);
     }
     
-    // Save both records
+    // Save payment
     await payment.save();
-    await booking.save();
     
-    console.log("✅ [OPTION A] Payment & Booking status updated successfully");
+    // Reload booking to get updated data
+    const updatedBooking = await Booking.findById(booking._id);
+    
+    console.log("✅ [Payment Router] Payment & Booking status updated successfully");
     
     res.status(200).json({
       success: true,
       message: `Cập nhật trạng thái thành công: ${oldStatus} → ${status}`,
       payment,
-      booking
+      booking: updatedBooking
     });
     
   } catch (err) {

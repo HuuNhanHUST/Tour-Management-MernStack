@@ -1,6 +1,121 @@
 import Booking from '../models/Booking.js';
 import Tour from '../models/Tour.js';
 import PricingRule from '../models/PricingRule.js';
+import mongoose from 'mongoose';
+
+// ✅ HELPER: Create booking từ payment (không cần req/res)
+export const createBookingFromPayment = async (bookingData) => {
+  const {
+    userId, userEmail, tourId, tourName,
+    fullName, phone, guestSize, guests,
+    singleRoomCount, totalAmount, basePrice,
+    appliedDiscounts, appliedSurcharges,
+    paymentMethod, paymentStatus,
+    province, district, ward, addressDetail,
+    bookAt
+  } = bookingData;
+
+  // Validate tour exists
+  const tour = await Tour.findById(tourId);
+  if (!tour) {
+    throw new Error("Tour không tồn tại");
+  }
+
+  // Check tour not ended
+  const today = new Date();
+  if (today > new Date(tour.endDate)) {
+    throw new Error("Tour này đã kết thúc và không còn khả dụng");
+  }
+
+  // Check slots availability
+  const remaining = tour.maxGroupSize - tour.currentBookings;
+  if (remaining <= 0) {
+    throw new Error("Tour đã hết chỗ");
+  }
+  if (guestSize > remaining) {
+    throw new Error(`Chỉ còn lại ${remaining} chỗ trống`);
+  }
+
+  // Validate required fields
+  if (!province?.code || !district?.code || !ward?.code || !addressDetail) {
+    throw new Error("Vui lòng nhập đầy đủ thông tin địa chỉ");
+  }
+
+  if (!guests || guests.length === 0 || guests.length !== guestSize) {
+    throw new Error("Thông tin khách không đầy đủ hoặc không khớp với số lượng khách");
+  }
+
+  // Create booking
+  const newBooking = new Booking({
+    userId: new mongoose.Types.ObjectId(userId),
+    userEmail,
+    tourId: tour._id,
+    tourName: tourName || tour.title,
+    fullName,
+    phone,
+    guestSize,
+    guests,
+    singleRoomCount: singleRoomCount || 0,
+    totalAmount,
+    basePrice,
+    appliedDiscounts: appliedDiscounts || [],
+    appliedSurcharges: appliedSurcharges || [],
+    paymentMethod,
+    paymentStatus, // ✅ Set by payment router (Pending/Confirmed)
+    bookAt: bookAt || new Date(),
+    province,
+    district,
+    ward,
+    addressDetail
+  });
+
+  await newBooking.save();
+  console.log("✅ [BookingController] Booking created:", newBooking._id);
+
+  return { booking: newBooking, tour };
+};
+
+// ✅ HELPER: Update booking payment status
+export const updateBookingPaymentStatus = async (bookingId, paymentStatus) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new Error("Booking không tồn tại");
+  }
+
+  booking.paymentStatus = paymentStatus;
+  await booking.save();
+  console.log(`✅ [BookingController] Booking ${bookingId} status updated to ${paymentStatus}`);
+
+  return booking;
+};
+
+// ✅ HELPER: Update tour slots
+export const updateTourSlots = async (tourId, guestSize) => {
+  const tour = await Tour.findById(tourId);
+  if (!tour) {
+    throw new Error("Tour không tồn tại");
+  }
+
+  tour.currentBookings += guestSize;
+  await tour.save();
+  console.log(`✅ [BookingController] Tour ${tourId} slots updated: ${tour.currentBookings}`);
+
+  return tour;
+};
+
+// ✅ HELPER: Rollback tour slots (for cancelled/failed payments)
+export const rollbackTourSlots = async (tourId, guestSize) => {
+  const tour = await Tour.findById(tourId);
+  if (!tour) {
+    throw new Error("Tour không tồn tại");
+  }
+
+  tour.currentBookings -= guestSize;
+  await tour.save();
+  console.log(`✅ [BookingController] Tour ${tourId} slots rolled back: ${tour.currentBookings}`);
+
+  return tour;
+};
 
 // ✅ Tạo booking có kiểm tra chỗ và thời gian (an toàn) và thêm địa chỉ
 export const createBooking = async (req, res) => {
