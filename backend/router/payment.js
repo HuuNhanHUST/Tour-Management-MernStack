@@ -21,52 +21,242 @@ router.all('*', (req, res, next) => {
 });
 
 
-// ✅ Gửi yêu cầu thanh toán MoMo
-router.post('/momo', async (req, res) => {
+// ✅ OPTION A: Simplified Cash payment endpoint
+// Create Booking first (single source of truth), then minimal Payment record
+router.post('/cash', async (req, res) => {
   const {
-    amount,
-    orderId,
-    orderInfo,
-    userId,
-    tourId,
-    quantity,
-    email,
-    fullName,
-    phone,
-    tourName,
-    province,
-    district,
-    ward,
-    addressDetail
+    userId, userEmail, fullName, phone,
+    tourId, tourName, guestSize,
+    guests, singleRoomCount,
+    totalAmount, basePrice,
+    appliedDiscounts, appliedSurcharges,
+    province, district, ward, addressDetail,
+    bookAt
   } = req.body;
 
   try {
-    const tour = await Tour.findById(tourId);
-    if (!tour) return res.status(404).json({ message: "Tour không tồn tại" });
+    console.log("💵 [OPTION A] Cash payment request received:", {
+      userId, tourId, guestSize, totalAmount
+    });
 
-    const pendingPayments = await Payment.aggregate([
+    // Validate tour exists
+    const tour = await Tour.findById(tourId);
+    if (!tour) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Tour không tồn tại" 
+      });
+    }
+
+    // Check slots availability
+    const availableSlots = tour.maxGroupSize - tour.currentBookings;
+    if (guestSize > availableSlots) {
+      return res.status(400).json({
+        success: false,
+        message: `Chỉ còn lại ${availableSlots} chỗ trống.`
+      });
+    }
+
+    // Validate required fields
+    if (!province?.code || !district?.code || !ward?.code || !addressDetail) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ thông tin địa chỉ."
+      });
+    }
+
+    if (!guests || guests.length === 0 || guests.length !== guestSize) {
+      return res.status(400).json({
+        success: false,
+        message: "Thông tin khách không đầy đủ hoặc không khớp với số lượng khách."
+      });
+    }
+
+    // ✅ OPTION A STEP 1: Create Booking FIRST (single source of truth)
+    const newBooking = new Booking({
+      userId: new mongoose.Types.ObjectId(userId),
+      userEmail,
+      tourId: tour._id,
+      tourName: tourName || tour.title,
+      fullName,
+      phone,
+      guestSize,
+      guests,
+      singleRoomCount: singleRoomCount || 0,
+      totalAmount,
+      basePrice,
+      appliedDiscounts: appliedDiscounts || [],
+      appliedSurcharges: appliedSurcharges || [],
+      paymentMethod: "Cash",
+      paymentStatus: "Confirmed", // ✅ Cash is auto-confirmed
+      bookAt: bookAt || new Date(),
+      province,
+      district,
+      ward,
+      addressDetail
+    });
+
+    await newBooking.save();
+    console.log("✅ [OPTION A] Booking created (single source):", newBooking._id);
+
+    // ✅ OPTION A STEP 2: Create minimal Payment record (tracking only)
+    const orderId = `CASH_${Date.now()}_${newBooking._id}`;
+    
+    const newPayment = new Payment({
+      bookingId: newBooking._id,
+      orderId,
+      amount: totalAmount,
+      payType: "Cash",
+      status: "Confirmed",
+      paidAt: new Date()
+    });
+
+    await newPayment.save();
+    console.log("✅ [OPTION A] Payment tracking created:", newPayment._id);
+
+    // ✅ OPTION A STEP 3: Update tour slots
+    tour.currentBookings += guestSize;
+    await tour.save();
+    console.log("✅ Tour slots updated:", tour.currentBookings);
+
+    // ✅ OPTION A STEP 4: Send email confirmation
+    try {
+      await sendSuccessEmail(
+        userEmail,
+        orderId,
+        totalAmount,
+        fullName
+      );
+      console.log("✅ Email sent to:", userEmail);
+    } catch (emailError) {
+      console.error("⚠️ Email failed but booking successful:", emailError.message);
+    }
+
+    console.log("✅ Cash payment complete:", {
+      paymentId: newPayment._id,
+      bookingId: newBooking._id
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Đặt tour thành công! Vui lòng thanh toán tiền mặt khi nhận tour.",
+      data: {
+        payment: newPayment,
+        booking: newBooking
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi tạo thanh toán Cash:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Tạo thanh toán thất bại',
+      error: error.message 
+    });
+  }
+});
+
+
+// ✅ OPTION A: MoMo payment endpoint - Create Booking immediately, Payment for tracking
+router.post('/momo', async (req, res) => {
+  const {
+    amount, orderId, orderInfo,
+    userId, tourId, email,
+    fullName, phone, tourName,
+    guestSize, guests, singleRoomCount,
+    basePrice, appliedDiscounts, appliedSurcharges,
+    province, district, ward, addressDetail
+  } = req.body;
+
+  try {
+    console.log("💳 [OPTION A] MoMo payment request received:", {
+      userId, tourId, guestSize, amount
+    });
+
+    const tour = await Tour.findById(tourId);
+    if (!tour) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Tour không tồn tại" 
+      });
+    }
+
+    // Check slots (including pending bookings)
+    const pendingBookings = await Booking.aggregate([
       {
         $match: {
           tourId: new mongoose.Types.ObjectId(tourId),
-          status: "Pending"
+          paymentStatus: "Pending",
+          paymentMethod: "MoMo"
         }
       },
       {
         $group: {
           _id: null,
-          totalPending: { $sum: "$quantity" }
+          totalPending: { $sum: "$guestSize" }
         }
       }
     ]);
-    const pendingQuantity = pendingPayments[0]?.totalPending || 0;
+    
+    const pendingQuantity = pendingBookings[0]?.totalPending || 0;
     const availableSlots = tour.maxGroupSize - tour.currentBookings - pendingQuantity;
 
-    if (quantity > availableSlots) {
+    if (guestSize > availableSlots) {
       return res.status(400).json({
+        success: false,
         message: `Tour đã hết chỗ hoặc chỉ còn lại ${availableSlots} chỗ do đang chờ thanh toán.`
       });
     }
 
+    // Validate required fields
+    if (!province?.code || !district?.code || !ward?.code || !addressDetail) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ thông tin địa chỉ."
+      });
+    }
+
+    if (!guests || guests.length === 0 || guests.length !== guestSize) {
+      return res.status(400).json({
+        success: false,
+        message: "Thông tin khách không đầy đủ hoặc không khớp với số lượng khách."
+      });
+    }
+
+    let finalEmail = email;
+    if (!finalEmail) {
+      const user = await User.findById(userId);
+      finalEmail = user?.email || "";
+    }
+
+    // ✅ OPTION A STEP 1: Create Booking FIRST (even before payment confirmation)
+    const newBooking = new Booking({
+      userId: new mongoose.Types.ObjectId(userId),
+      userEmail: finalEmail,
+      tourId: tour._id,
+      tourName: tour.title || tourName,
+      fullName,
+      phone,
+      guestSize,
+      guests,
+      singleRoomCount: singleRoomCount || 0,
+      totalAmount: amount,
+      basePrice,
+      appliedDiscounts: appliedDiscounts || [],
+      appliedSurcharges: appliedSurcharges || [],
+      paymentMethod: "MoMo",
+      paymentStatus: "Pending", // ✅ Will be updated by IPN
+      bookAt: new Date(),
+      province,
+      district,
+      ward,
+      addressDetail
+    });
+
+    await newBooking.save();
+    console.log("✅ [OPTION A] Booking created with Pending status:", newBooking._id);
+
+    // Generate MoMo request
     const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
     const rawAmount = amount.toString();
     const rawSignature =
@@ -94,85 +284,148 @@ router.post('/momo', async (req, res) => {
     };
 
     const momoRes = await axios.post(process.env.MOMO_API_URL, requestBody);
-    console.log("✅ MoMo response:", momoRes.data);
+    console.log("✅ MoMo API response:", momoRes.data);
 
-    let finalEmail = email;
-    if (!finalEmail) {
-      const user = await User.findById(userId);
-      finalEmail = user?.email || "";
-    }
-
-    // 🧾 Log dữ liệu sắp lưu
-    console.log("🧾 Tạo payment MoMo với:", {
-      tourId: tour._id,
-      quantity,
-      amount
-    });
-
-    await Payment.create({
-      userId: new mongoose.Types.ObjectId(userId),
-      userEmail: finalEmail,
-      tourId: tour._id, // ✅ lấy từ đối tượng đã find được
-      quantity: Number(quantity),
+    // ✅ OPTION A STEP 2: Create minimal Payment tracking
+    const newPayment = new Payment({
+      bookingId: newBooking._id,
       orderId,
       amount: Number(amount),
       status: 'Pending',
       payType: 'MoMo',
-      tourName: tour.title,
-      fullName,
-      phone,
-      province: province || { code: "", name: "" },
-      district: district || { code: "", name: "" },
-      ward: ward || { code: "", name: "" },
-      addressDetail: addressDetail || "",
+      momoRequestId: requestId
     });
 
+    await newPayment.save();
+    console.log("✅ [OPTION A] Payment tracking created with Pending status");
+
     res.status(200).json(momoRes.data);
+    
   } catch (error) {
     console.error('❌ Lỗi tạo thanh toán MoMo:', error.message);
-    res.status(500).json({ message: 'Tạo thanh toán thất bại' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Tạo thanh toán thất bại',
+      error: error.message 
+    });
   }
 });
 
 
-// ✅ MoMo gọi về khi thanh toán thành công
+// ✅ OPTION A: MoMo IPN handler - Update Booking & Payment status
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
-  console.log("📩 IPN từ MoMo:", JSON.stringify(data, null, 2));
+  console.log("📩 [OPTION A] IPN từ MoMo:", JSON.stringify(data, null, 2));
 
   try {
-    const updatedPayment = await Payment.findOneAndUpdate(
-      { orderId: data.orderId },
-      { status: data.resultCode === 0 ? "Success" : "Failed" },
-      { new: true }
-    ).populate("userId", "username");
-
-    if (data.resultCode === 0 && updatedPayment) {
-      console.log("✅ MoMo thanh toán thành công - chờ admin duyệt để tạo booking");
+    // Find payment by orderId
+    const payment = await Payment.findOne({ orderId: data.orderId });
+    
+    if (!payment) {
+      console.error("❌ Payment not found for orderId:", data.orderId);
+      return res.status(404).json({ message: "Payment not found" });
     }
 
-    res.status(200).json({ message: 'IPN received' });
+    // Find associated booking
+    const booking = await Booking.findById(payment.bookingId);
+    
+    if (!booking) {
+      console.error("❌ Booking not found for payment:", payment._id);
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (data.resultCode === 0) {
+      // ✅ PAYMENT SUCCESS
+      console.log("✅ Payment successful, updating records...");
+
+      // Update Payment status
+      payment.status = "Confirmed";
+      payment.momoTransId = data.transId;
+      payment.paidAt = new Date();
+      await payment.save();
+      console.log("✅ [OPTION A] Payment status updated to Confirmed");
+
+      // Update Booking status
+      booking.paymentStatus = "Confirmed";
+      await booking.save();
+      console.log("✅ [OPTION A] Booking status updated to Confirmed");
+
+      // Update tour slots
+      const tour = await Tour.findById(booking.tourId);
+      if (tour) {
+        tour.currentBookings += booking.guestSize;
+        await tour.save();
+        console.log("✅ Tour slots updated:", tour.currentBookings);
+      }
+
+      // Send success email
+      try {
+        await sendSuccessEmail(
+          booking.userEmail,
+          payment.orderId,
+          payment.amount,
+          booking.fullName
+        );
+        console.log("✅ Email sent to:", booking.userEmail);
+      } catch (emailError) {
+        console.error("⚠️ Email failed:", emailError.message);
+      }
+
+      // Notify via Socket.IO
+      if (io) {
+        io.emit("newBooking", {
+          message: `Booking mới từ ${booking.fullName}`,
+          booking: booking
+        });
+      }
+
+      return res.status(200).json({ message: "IPN processed successfully" });
+
+    } else {
+      // ❌ PAYMENT FAILED
+      console.log("❌ Payment failed, updating status...");
+      
+      payment.status = "Failed";
+      await payment.save();
+      
+      booking.paymentStatus = "Failed";
+      await booking.save();
+      
+      console.log("✅ [OPTION A] Payment & Booking marked as Failed");
+      return res.status(200).json({ message: "Payment failed, statuses updated" });
+    }
+
   } catch (err) {
     console.error("❌ Lỗi xử lý IPN:", err.message);
-    res.status(500).json({ message: 'Xử lý IPN thất bại' });
+    res.status(500).json({ message: 'Xử lý IPN thất bại', error: err.message });
   }
 });
 
 
-// ✅ Lịch sử thanh toán của user
+// ✅ OPTION A: Lịch sử thanh toán của user (populate booking data)
 router.get('/user/:userId', async (req, res) => {
   try {
     const payments = await Payment.find({
-      userId: new mongoose.Types.ObjectId(req.params.userId)
-    }).sort({ createdAt: -1 });
+      bookingId: { $exists: true }
+    })
+      .populate({
+        path: 'bookingId',
+        match: { userId: new mongoose.Types.ObjectId(req.params.userId) },
+        select: 'fullName tourName guestSize totalAmount paymentStatus bookAt'
+      })
+      .sort({ createdAt: -1 });
 
-    res.status(200).json(payments);
+    // Filter out payments where booking doesn't match userId
+    const userPayments = payments.filter(p => p.bookingId != null);
+
+    res.status(200).json(userPayments);
   } catch (err) {
+    console.error("❌ Error getting user payments:", err);
     res.status(500).json({ message: 'Lỗi lấy lịch sử thanh toán' });
   }
 });
 
-// ✅ Admin: xem tất cả thanh toán
+// ✅ OPTION A: Admin xem tất cả thanh toán (populate booking details)
 router.get('/all', async (req, res) => {
   const token = req.cookies.accessToken;
   if (!token) return res.status(401).json({ success: false });
@@ -182,16 +435,24 @@ router.get('/all', async (req, res) => {
     if (decoded.role !== 'admin') return res.status(403).json({ success: false });
 
     const payments = await Payment.find()
-      .populate("userId", "username email")
+      .populate({
+        path: 'bookingId',
+        select: 'userId userEmail fullName phone tourId tourName guestSize totalAmount paymentStatus bookAt',
+        populate: {
+          path: 'userId',
+          select: 'username email'
+        }
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json(payments);
   } catch (err) {
+    console.error("❌ Error getting all payments:", err);
     res.status(500).json({ message: "Lỗi xác thực hoặc truy vấn" });
   }
 });
 
-// ✅ Admin: cập nhật trạng thái thanh toán
+// ✅ OPTION A: Admin update payment status
 router.put('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -201,103 +462,166 @@ router.put('/:id/status', async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    if (decoded.role !== 'admin') return res.status(403).json({ success: false });
-
-    if (!["Pending", "Success", "Failed"].includes(status)) {
-      return res.status(400).json({ success: false });
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ success: false });
     }
 
-    const updated = await Payment.findByIdAndUpdate(id, { status }, { new: true })
-      .populate("userId", "username");
-
-    if (!updated) return res.status(404).json({ success: false });
-
-    io.emit(`payment-updated-${updated.userId._id}`, updated);
-
-    if (status === "Success" && updated.userEmail) {
-      console.log("✅ Đang xử lý booking cho payment ID:", updated._id);
-      console.log("🔢 Số lượng người (quantity):", updated.quantity);
-      console.log("📌 Tour ID (trước kiểm tra):", updated.tourId);
-      console.log("📧 Email người dùng:", updated.userEmail);
-      console.log("👤 Tên người đặt:", updated.fullName);
-
-      // ✅ Truy xuất lại chính xác tour từ DB bằng ID
-      const tour = await Tour.findOne({ _id: updated.tourId });
-
-      if (!tour) {
-        console.error("❌ Không tìm thấy tour với ID:", updated.tourId);
-        return res.status(404).json({ success: false, message: "Không tìm thấy tour để tạo booking." });
-      }
-
-      // ✅ Kiểm tra số lượng còn trống
-      const remaining = tour.maxGroupSize - tour.currentBookings;
-      if (updated.quantity > remaining) {
-        return res.status(400).json({
-          success: false,
-          message: `Không đủ chỗ trống. Chỉ còn lại ${remaining} chỗ.`,
-        });
-      }
-
-      // ✅ Tạo booking
-      const newBooking = new Booking({
-        userId: updated.userId._id,
-        userEmail: updated.userEmail,
-        tourId: tour._id,
-        tourName: updated.tourName || tour.title,
-        fullName: updated.fullName || updated.userId?.username || "Người dùng",
-        phone: updated.phone || "Không rõ",
-        guestSize: updated.quantity || 1,
-        totalAmount: updated.amount,
-        bookAt: new Date(),
-        paymentMethod: "MoMo",
-        province: updated.province || { code: "", name: "" },
-        district: updated.district || { code: "", name: "" },
-        ward: updated.ward || { code: "", name: "" },
-        addressDetail: updated.addressDetail || "",
+    if (!["Pending", "Confirmed", "Failed", "Cancelled"].includes(status)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Status không hợp lệ" 
       });
-
-      await newBooking.save();
-
-      // ✅ Cập nhật số lượng người trong tour
-      tour.currentBookings += updated.quantity || 1;
-      await tour.save();
-      console.log("✅ Đã cập nhật currentBookings thành:", tour.currentBookings);
-
-      // ✅ Gửi email
-      await sendSuccessEmail(
-        updated.userEmail,
-        updated.orderId,
-        updated.amount,
-        updated.userId?.username || "Quý khách"
-      );
     }
 
-    res.status(200).json({ success: true, data: updated });
+    const payment = await Payment.findById(id).populate('bookingId');
+    if (!payment) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Không tìm thấy payment" 
+      });
+    }
+
+    const booking = payment.bookingId;
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy booking liên kết với payment này"
+      });
+    }
+
+    const oldStatus = payment.status;
+    console.log(`📝 [OPTION A] Admin updating payment ${id}: ${oldStatus} → ${status}`);
+    
+    // Update both Payment and Booking status
+    payment.status = status;
+    booking.paymentStatus = status;
+    
+    if (status === "Confirmed" && oldStatus !== "Confirmed") {
+      payment.paidAt = new Date();
+      
+      // Send confirmation email if needed
+      if (booking.userEmail) {
+        try {
+          await sendSuccessEmail(
+            booking.userEmail,
+            payment.orderId,
+            payment.amount,
+            booking.fullName
+          );
+          console.log("✅ Confirmation email sent");
+        } catch (emailError) {
+          console.error("⚠️ Email failed:", emailError.message);
+        }
+      }
+      
+      console.log("✅ Payment & Booking confirmed by admin");
+    }
+    
+    // ✅ OPTION A: If rejecting/cancelling payment
+    if ((status === "Failed" || status === "Cancelled") && oldStatus === "Confirmed") {
+      console.log("⚠️ [OPTION A] Rolling back confirmed payment to", status);
+      
+      // Rollback tour slots
+      const tour = await Tour.findById(booking.tourId);
+      if (tour) {
+        tour.currentBookings -= booking.guestSize;
+        await tour.save();
+        console.log("✅ Restored tour slots:", tour.currentBookings);
+      }
+    }
+    
+    // Save both records
+    await payment.save();
+    await booking.save();
+    
+    console.log("✅ [OPTION A] Payment & Booking status updated successfully");
+    
+    res.status(200).json({
+      success: true,
+      message: `Cập nhật trạng thái thành công: ${oldStatus} → ${status}`,
+      payment,
+      booking
+    });
+    
   } catch (err) {
-    console.error("❌ Lỗi cập nhật trạng thái thanh toán:", err.message);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("❌ Error updating payment status:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Lỗi cập nhật trạng thái",
+      error: err.message 
+    });
+  }
+});
+
+// ✅ OPTION A: Get single payment with booking details
+router.get('/:id', async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate({
+        path: 'bookingId',
+        populate: {
+          path: 'userId',
+          select: 'username email'
+        }
+      });
+      
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy payment"
+      });
+    }
+    
+    res.status(200).json(payment);
+  } catch (err) {
+    console.error("❌ Error getting payment:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Lỗi truy vấn payment" 
+    });
+  }
+});
+
+// ✅ OPTION A: Get payment by orderId
+router.get('/order/:orderId', async (req, res) => {
+  try {
+    const payment = await Payment.findOne({ orderId: req.params.orderId })
+      .populate('bookingId');
+      
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy payment"
+      });
+    }
+    
+    res.status(200).json(payment);
+  } catch (err) {
+    console.error("❌ Error getting payment by orderId:", err);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi truy vấn payment"
+    });
   }
 });
 
 
-
-
-// ✅ Gửi thử email từ đơn thành công gần nhất
+// ✅ Test email endpoint
 router.get('/test-email', async (req, res) => {
   try {
-    const payment = await Payment.findOne({ status: "Success" })
+    const payment = await Payment.findOne({ status: "Confirmed" })
       .sort({ createdAt: -1 })
-      .populate("userId", "username");
+      .populate('bookingId');
 
-    if (!payment || !payment.userEmail) {
-      return res.send("❌ Không có email hợp lệ để gửi.");
+    if (!payment || !payment.bookingId || !payment.bookingId.userEmail) {
+      return res.send("❌ Không có payment/booking hợp lệ để gửi email.");
     }
 
     await sendSuccessEmail(
-      payment.userEmail,
+      payment.bookingId.userEmail,
       payment.orderId,
       payment.amount,
-      payment.userId?.username || "Quý khách"
+      payment.bookingId.fullName
     );
 
     res.send("✅ Đã gửi email test thành công");

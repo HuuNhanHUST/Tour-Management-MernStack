@@ -84,6 +84,12 @@ const bookingSchema = new mongoose.Schema(
       default: "Cash", // hoặc "MoMo"
       enum: ["Cash", "MoMo"]
     },
+    // ✅ OPTION A: Add payment status tracking in Booking
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Confirmed", "Failed", "Cancelled"],
+      default: "Pending"
+    },
 province: {
   code: { type: String, required: true },
   name: { type: String, required: true },
@@ -103,5 +109,17 @@ addressDetail: {
   },
   { timestamps: true }
 );
+
+// ✅ OPTION A: Virtual getter to access payment details
+bookingSchema.virtual('payment', {
+  ref: 'Payment',
+  localField: '_id',
+  foreignField: 'bookingId',
+  justOne: true
+});
+
+// Ensure virtuals are included in JSON
+bookingSchema.set('toJSON', { virtuals: true });
+bookingSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model("Booking", bookingSchema);

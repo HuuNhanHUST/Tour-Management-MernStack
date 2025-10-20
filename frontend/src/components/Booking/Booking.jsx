@@ -251,27 +251,21 @@ const Booking = ({ tour, avgRating }) => {
       // Use totalAmount from pricing calculation - this includes all discounts and surcharges
       const finalTotalAmount = Math.floor(Number(totalAmount));
       
-      console.log("=== BOOKING DEBUG START ===");
+      console.log("=== CASH PAYMENT DEBUG START ===");
       console.log("Display totalAmount:", totalAmount);
-      console.log("Final total amount for booking:", finalTotalAmount);
-      console.log("Guests array before booking:", guests);
-      console.log("Guests array length:", guests.length);
-      console.log("Credentials guestSize:", credentials.guestSize);
-      console.log("Each guest details:");
-      guests.forEach((guest, index) => {
-        console.log(`  Guest ${index + 1}:`, guest);
-      });
+      console.log("Final total amount:", finalTotalAmount);
+      console.log("Guests array:", guests);
+      console.log("Guests count:", guests.length);
+      console.log("Guest size:", credentials.guestSize);
       
       // Check if guests array is empty
       if (!guests || guests.length === 0) {
-        alert(`DEBUG: Guests array is empty! Length: ${guests?.length || 0}`);
         NotificationManager.error("Vui lòng thêm thông tin khách vào danh sách trước khi đặt tour.");
         return;
       }
       
       // Check if guests count matches guestSize
       if (guests.length !== Number(credentials.guestSize)) {
-        alert(`DEBUG: Guests count mismatch! Guests: ${guests.length}, GuestSize: ${credentials.guestSize}`);
         NotificationManager.error(`Số lượng khách trong danh sách (${guests.length}) không khớp với số lượng đã chọn (${credentials.guestSize}). Vui lòng kiểm tra lại.`);
         return;
       }
@@ -292,11 +286,6 @@ const Booking = ({ tour, avgRating }) => {
           console.log(`Guest ${index + 1} final price:`, guestPrice);
         }
         
-        console.log(`Processing guest ${index + 1}:`, {
-          originalGuest: guest,
-          finalPrice: guestPrice
-        });
-        
         return {
           ...guest,
           price: guestPrice,
@@ -306,10 +295,10 @@ const Booking = ({ tour, avgRating }) => {
       });
       
       console.log("=== GUESTS WITH PRICES ===");
-      console.log("GuestsWithPrices array:", guestsWithPrices);
-      console.log("GuestsWithPrices length:", guestsWithPrices.length);
+      console.log("GuestsWithPrices:", guestsWithPrices);
       
-      const bookingData = {
+      // ✅ CHANGED: Prepare payment data instead of booking data
+      const paymentData = {
         userId: credentials.userId,
         userEmail: credentials.userEmail,
         fullName: credentials.fullName,
@@ -323,36 +312,24 @@ const Booking = ({ tour, avgRating }) => {
         basePrice: pricingData?.basePrice || Number(price),
         appliedDiscounts: pricingData?.appliedDiscounts || [],
         appliedSurcharges: pricingData?.appliedSurcharges || [],
-        paymentMethod: "Cash",
-        bookAt: new Date(),
         province: location.province,
         district: location.district,
         ward: location.ward,
         addressDetail,
+        bookAt: new Date(),
       };
       
-      // Log the full booking data for debugging
-      console.log("=== FINAL BOOKING DATA ===");
-      console.log("Full booking data being sent:", JSON.stringify(bookingData, null, 2));
-      console.log("Booking data guests field:", bookingData.guests);
-      console.log("Guests array stringified:", JSON.stringify(bookingData.guests));
+      console.log("=== FINAL PAYMENT DATA ===");
+      console.log("Đang gửi dữ liệu thanh toán Cash:", paymentData);
 
-      // Additional validation before sending
-      if (!bookingData.guests || bookingData.guests.length === 0) {
-        alert("CRITICAL: bookingData.guests is empty before sending to backend!");
-        console.error("CRITICAL: bookingData.guests is empty:", bookingData.guests);
-        return;
-      }
-
-      console.log("Đang gửi dữ liệu đặt tour:", bookingData);
-
-      const res = await axios.post(`${BASE_URL}/booking`, 
-        bookingData, 
+      // ✅ CHANGED: POST to /payment/cash instead of /booking
+      const res = await axios.post(`${BASE_URL}/payment/cash`, 
+        paymentData, 
         { withCredentials: true } 
       );
 
       if (res.data.success) {
-        NotificationManager.success("Đặt tour thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
+        NotificationManager.success("Đặt tour thành công! Vui lòng thanh toán tiền mặt khi nhận tour.");
         navigate("/thank-you");
       } else {
         NotificationManager.error("Đặt tour thất bại: " + res.data.message);
@@ -480,14 +457,12 @@ const Booking = ({ tour, avgRating }) => {
         tourName: tour.title,
         fullName: credentials.fullName,
         phone: credentials.phone,
-        quantity: credentials.guestSize,
-        departureDate: startDate,
-        guests: guestsWithPrices,
+        guestSize: credentials.guestSize, // ✅ Changed from quantity
+        guests: guestsWithPrices, // ✅ Added full guest info
         singleRoomCount: singleRoomCount,
         basePrice: pricingData?.basePrice || Number(price),
         appliedDiscounts: pricingData?.appliedDiscounts || [],
         appliedSurcharges: pricingData?.appliedSurcharges || [],
-
         province: location.province,
         district: location.district,
         ward: location.ward,

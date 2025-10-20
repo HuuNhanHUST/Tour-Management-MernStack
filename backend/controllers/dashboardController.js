@@ -22,20 +22,20 @@ export const getTourCount = async (req, res) => {
   }
 };
 
-// 🔹 Tổng số đơn hàng đã thanh toán
+// 🔹 OPTION A: Tổng số đơn hàng đã thanh toán (using paymentStatus)
 export const getBookingCount = async (req, res) => {
   try {
-    const count = await Booking.countDocuments({ totalAmount: { $gt: 0 } });
+    const count = await Booking.countDocuments({ paymentStatus: "Confirmed" });
     res.status(200).json({ success: true, count });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Lỗi khi lấy số lượng đơn hàng' });
   }
 };
 
-// 🔹 Tổng doanh thu từ các đơn đã thanh toán
+// 🔹 OPTION A: Tổng doanh thu từ các đơn đã thanh toán
 export const getTotalRevenue = async (req, res) => {
   try {
-    const bookings = await Booking.find({ totalAmount: { $gt: 0 } });
+    const bookings = await Booking.find({ paymentStatus: "Confirmed" });
     const total = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
     res.status(200).json({ success: true, total });
   } catch (err) {
@@ -43,14 +43,14 @@ export const getTotalRevenue = async (req, res) => {
   }
 };
 
-// 🔹 Tổng hợp toàn bộ thống kê dashboard (gọi 1 lần duy nhất)
+// 🔹 OPTION A: Tổng hợp toàn bộ thống kê dashboard
 export const getDashboardStats = async (req, res) => {
   try {
     const [userCount, tourCount, bookingCount, bookings] = await Promise.all([
       User.estimatedDocumentCount(),
       Tour.estimatedDocumentCount(),
-      Booking.countDocuments({ totalAmount: { $gt: 0 } }),
-      Booking.find({ totalAmount: { $gt: 0 } })
+      Booking.countDocuments({ paymentStatus: "Confirmed" }),
+      Booking.find({ paymentStatus: "Confirmed" })
     ]);
 
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
@@ -70,7 +70,7 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-// 🔹 Thống kê số lượng đơn hàng theo khoảng thời gian
+// 🔹 OPTION A: Thống kê số lượng đơn hàng theo khoảng thời gian
 export const getOrderStatsByDate = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -92,7 +92,7 @@ export const getOrderStatsByDate = async (req, res) => {
             $gte: start,
             $lte: end,
           },
-          totalAmount: { $gt: 0 }, // Chỉ tính đơn đã thanh toán
+          paymentStatus: "Confirmed", // ✅ OPTION A: Use paymentStatus
         },
       },
       {
@@ -118,7 +118,7 @@ export const getOrderStatsByDate = async (req, res) => {
   }
 };
 
-// 🔹 Thống kê doanh thu theo khoảng thời gian
+// 🔹 OPTION A: Thống kê doanh thu theo khoảng thời gian
 export const getRevenueStatsByDate = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -140,7 +140,7 @@ export const getRevenueStatsByDate = async (req, res) => {
             $gte: start,
             $lte: end,
           },
-          totalAmount: { $gt: 0 }, // Chỉ tính đơn đã thanh toán
+          paymentStatus: "Confirmed", // ✅ OPTION A: Use paymentStatus
         },
       },
       {
