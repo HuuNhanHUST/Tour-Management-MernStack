@@ -52,6 +52,7 @@ const Booking = ({ tour, avgRating }) => {
   const [singleRoomCount, setSingleRoomCount] = useState(0);
   const [pricingData, setPricingData] = useState(null);
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [pricingError, setPricingError] = useState(false);
 
   const maxGroup = Number(maxGroupSize) || 0;
   const currentBook = Number(currentBookings) || 0;
@@ -105,11 +106,16 @@ const Booking = ({ tour, avgRating }) => {
         console.log("Applied rules:", response.data.data.appliedRules);
         console.log("Total amount:", response.data.data.totalAmount);
         setPricingData(response.data.data);
+        setPricingError(false); // Reset error khi tính giá thành công
       } else {
         console.error("API returned success=false or missing data");
+        setPricingError(true);
+        NotificationManager.error("Không thể tính giá tour. Vui lòng thử lại!");
       }
       } catch (error) {
         console.error("Lỗi tính giá:", error);
+        setPricingError(true);
+        NotificationManager.error("Không thể kết nối đến server để tính giá. Vui lòng kiểm tra kết nối mạng!");
       } finally {
         setIsCalculatingPrice(false);
       }
@@ -684,16 +690,30 @@ const Booking = ({ tour, avgRating }) => {
           <Button
             className="btn primary__btn w-100 mt-4"
             type="submit"
-            disabled={isTourExpired || isTourOngoing || availableSlots <= 0}
+            disabled={
+              isTourExpired || 
+              isTourOngoing || 
+              availableSlots <= 0 || 
+              pricingError || 
+              isCalculatingPrice
+            }
           >
-            Đặt Ngay
+            {pricingError ? "Lỗi tính giá - Không thể đặt tour" : "Đặt Ngay"}
           </Button>
         </Form>
       </div>
 
       <div className="booking__bottom">
         <ListGroup>
-          {isCalculatingPrice ? (
+          {pricingError ? (
+            <ListGroupItem className="border-0 px-0 text-center py-3">
+              <div className="alert alert-danger" role="alert">
+                <i className="ri-error-warning-line"></i>
+                <p className="mb-0 mt-2"><strong>Không thể tính giá tour!</strong></p>
+                <small>Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.</small>
+              </div>
+            </ListGroupItem>
+          ) : isCalculatingPrice ? (
             <ListGroupItem className="border-0 px-0 text-center py-3">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
