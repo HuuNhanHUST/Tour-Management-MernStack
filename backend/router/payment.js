@@ -21,6 +21,10 @@ import {
 dotenv.config();
 const router = express.Router();
 
+// ✅ SECURITY IMPROVEMENTS:
+// - FIX #1: Idempotency guard in IPN handler (prevents duplicate processing)
+// - FIX #2: IPN signature verification (prevents fake/malicious IPNs)
+
 router.all('*', (req, res, next) => {
   console.log("📢 Đã truy cập:", req.method, req.originalUrl);
   next();
@@ -249,12 +253,38 @@ router.post('/momo-notify', async (req, res) => {
   console.log("📩 [Payment Router] IPN từ MoMo:", JSON.stringify(data, null, 2));
 
   try {
+    // ✅ FIX #2: Verify IPN signature from MoMo
+    const rawSignature = 
+      `accessKey=${process.env.MOMO_ACCESS_KEY}&amount=${data.amount}&extraData=${data.extraData || ''}&message=${data.message}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&orderType=${data.orderType}&partnerCode=${data.partnerCode}&payType=${data.payType}&requestId=${data.requestId}&responseTime=${data.responseTime}&resultCode=${data.resultCode}&transId=${data.transId}`;
+    
+    const expectedSignature = crypto.createHmac('sha256', process.env.MOMO_SECRET_KEY)
+      .update(rawSignature)
+      .digest('hex');
+    
+    if (expectedSignature !== data.signature) {
+      console.error("❌ IPN signature không hợp lệ!");
+      console.error("Expected:", expectedSignature);
+      console.error("Received:", data.signature);
+      return res.status(400).json({ 
+        message: "Invalid signature - IPN không hợp lệ" 
+      });
+    }
+    console.log("✅ IPN signature verified successfully");
+
     // Find payment by orderId
     const payment = await Payment.findOne({ orderId: data.orderId });
     
     if (!payment) {
       console.error("❌ Payment not found for orderId:", data.orderId);
       return res.status(404).json({ message: "Payment not found" });
+    }
+
+    // ✅ FIX #1: Idempotency guard - check if already processed
+    if (payment.status === 'Confirmed') {
+      console.log("ℹ️ IPN đã được xử lý rồi cho orderId:", data.orderId);
+      return res.status(200).json({ 
+        message: "IPN already processed - Idempotent response" 
+      });
     }
 
     // Find associated booking
