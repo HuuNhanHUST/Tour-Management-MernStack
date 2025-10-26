@@ -1,0 +1,303 @@
+/* ==========================================
+   MULTI-STEP BOOKING STYLES
+   ========================================== */
+
+.multi-step-booking {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* ==========================================
+   PROGRESS BAR
+   ========================================== */
+
+.booking-progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2rem 0;
+  padding: 1rem 0;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.progress-step-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  border: 3px solid #e0e0e0;
+  transition: all 0.3s ease;
+  z-index: 2;
+  background-color: white;
+}
+
+.progress-step.active .progress-step-circle {
+  background-color: #fff;
+  color: #ff7e01;
+  border-color: #ff7e01;
+}
+
+.progress-step.current .progress-step-circle {
+  background-color: #ff7e01;
+  color: white;
+  border-color: #ff7e01;
+  box-shadow: 0 0 0 4px rgba(255, 126, 1, 0.2);
+}
+
+.progress-step-label {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #999;
+  font-weight: 500;
+  text-align: center;
+}
+
+.progress-step.active .progress-step-label {
+  color: #ff7e01;
+  font-weight: 600;
+}
+
+.progress-line {
+  height: 3px;
+  background-color: #e0e0e0;
+  flex: 1;
+  margin: 0 -10px;
+  margin-top: -25px;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.progress-line.active {
+  background-color: #ff7e01;
+}
+
+/* ==========================================
+   STEP CONTAINER
+   ========================================== */
+
+.step-container {
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================
+   BOOKING SECTIONS
+   ========================================== */
+
+.booking-section {
+  margin-bottom: 1.5rem;
+}
+
+.booking-section-title {
+  margin-bottom: 1.5rem;
+}
+
+.booking-section-title h5 {
+  color: #222;
+  margin-bottom: 0.5rem;
+}
+
+/* ==========================================
+   GUEST INFO CARDS
+   ========================================== */
+
+.guest-info {
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.guest-info:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guest-detail-card {
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
+.guest-detail-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.guest-detail-card .badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* ==========================================
+   SUMMARY CARDS
+   ========================================== */
+
+.summary-card,
+.summary-detail-card {
+  background-color: #f8f9fa;
+}
+
+.price-preview {
+  border: 2px solid #ff7e01;
+  background-color: #fff7f0;
+}
+
+.price-breakdown {
+  background-color: #f8f9fa;
+}
+
+/* ==========================================
+   PAYMENT METHOD CARDS
+   ========================================== */
+
+.payment-method-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.payment-method-card:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-method-card.selected {
+  background-color: #fff7f0;
+  border-color: #ff7e01 !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 3px rgba(255, 126, 1, 0.1);
+}
+
+.payment-method-card input[type="radio"] {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  accent-color: #ff7e01;
+}
+
+/* ==========================================
+   TOUR DATE INFO
+   ========================================== */
+
+.tour-date-info {
+  border-left: 4px solid #ff7e01;
+}
+
+/* ==========================================
+   BUTTONS
+   ========================================== */
+
+.btn-outline-secondary {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .booking-progress-bar {
+    margin: 1rem 0;
+  }
+
+  .progress-step-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .progress-step-label {
+    font-size: 0.75rem;
+  }
+
+  .progress-line {
+    margin-top: -20px;
+  }
+
+  .multi-step-booking {
+    padding: 0 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .progress-step-label {
+    display: none;
+  }
+
+  .progress-step-circle {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+}
+
+/* ==========================================
+   FORM CONTROLS
+   ========================================== */
+
+.form-control:focus {
+  border-color: #ff7e01;
+  box-shadow: 0 0 0 0.2rem rgba(255, 126, 1, 0.25);
+}
+
+.form-control::placeholder {
+  color: #adb5bd;
+}
+
+label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.text-danger {
+  color: #dc3545;
+}
+
+/* ==========================================
+   LOADING STATES
+   ========================================== */
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+/* ==========================================
+   UTILITIES
+   ========================================== */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
