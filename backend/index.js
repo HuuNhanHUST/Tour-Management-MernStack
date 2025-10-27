@@ -23,6 +23,7 @@ import userStatusRoute from './router/userStatus.js';
 import loginHistoryRoute from './router/loginHistory.js';
 import pricingRoute from './router/pricing.js';
 import UserStatus from './models/UserStatus.js';
+import { startCleanupJob } from './utils/cleanupPendingBookings.js';
 
 dotenv.config();
 const app = express();
@@ -174,6 +175,9 @@ app.get("/", (req, res) => {
 server.listen(port, () => {
   connectDB();
   console.log(`🚀 Server + Socket.IO running at http://localhost:${port}`);
+  
+  // ✅ Start cleanup job for pending bookings
+  startCleanupJob();
 });
 
 export { io };
