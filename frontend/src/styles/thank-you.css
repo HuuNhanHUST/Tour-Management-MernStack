@@ -1,9 +1,48 @@
 .thank__you span i {
-    font-size: 4rem;
-    color: green;
+  font-size: 4rem;
+  color: green;
+}
+
+.thank__you .success-icon i {
+  color: #28a745;
+  animation: scaleIn 0.5s ease;
+}
+
+.thank__you .error-icon i {
+  color: #dc3545;
+  animation: scaleIn 0.5s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
   }
-  
-  .thank__you h1 {
-    font-size: 3.6rem;
-    font-family: var(--subtitle-font-name);
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
+}
+
+.thank__you h1 {
+  font-size: 3.6rem;
+  font-family: var(--subtitle-font-name);
+}
+
+.thank__you .gap-3 {
+  gap: 1rem;
+}
+
+.thank__you .btn {
+  min-width: 150px;
+}
+
+.thank__you .btn-outline-primary {
+  border-color: #ff7e01;
+  color: #ff7e01;
+}
+
+.thank__you .btn-outline-primary:hover {
+  background-color: #ff7e01;
+  color: white;
+}
