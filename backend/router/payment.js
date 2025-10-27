@@ -194,10 +194,10 @@ router.post('/momo', async (req, res) => {
       bookAt: new Date()
     });
 
-    // ✅ FIX #3: Reserve slots IMMEDIATELY for Pending booking
+    // ✅ FIX #3: Reserve slots IMMEDIATELY for Pending booking (IN TRANSACTION)
     console.log(`📊 Reserving ${guestSize} slots for Pending MoMo booking...`);
-    await updateTourSlots(tourId, guestSize);
-    console.log(`✅ Slots reserved: ${tour.currentBookings} → ${tour.currentBookings + guestSize}`);
+    await updateTourSlots(tourId, guestSize, session);
+    console.log(`✅ Slots reserved in transaction`);
 
     // ✅ STEP 2: Create Payment tracking
     const newPayment = new Payment({
@@ -326,16 +326,21 @@ router.get('/momo-return', async (req, res) => {
       await payment.save({ session });
       console.log(`✅ Payment ${payment._id} status updated to ${newStatus}`);
       
-      // Update Booking status to Cancelled/Failed
-      await updateBookingPaymentStatus(booking._id, newStatus);
+      // ✅ FIXED: Update Booking status IN TRANSACTION
+      await updateBookingPaymentStatus(booking._id, newStatus, session);
       console.log(`✅ Booking ${booking._id} status updated to ${newStatus}`);
       
-      // ✅ FIX #4: Rollback reserved slots
+      // ✅ FIXED: Rollback reserved slots IN TRANSACTION
       console.log(`🔄 Rolling back ${booking.guestSize} slots for tour ${booking.tourId}...`);
-      await rollbackTourSlots(booking.tourId, booking.guestSize);
       
-      const tour = await Tour.findById(booking.tourId).session(session);
-      console.log(`✅ Slots rolled back: ${tour.currentBookings + booking.guestSize} → ${tour.currentBookings}`);
+      // Get old value for accurate logging
+      const tourBeforeRollback = await Tour.findById(booking.tourId).session(session);
+      const oldBookings = tourBeforeRollback.currentBookings;
+      
+      await rollbackTourSlots(booking.tourId, booking.guestSize, session);
+      
+      const tourAfterRollback = await Tour.findById(booking.tourId).session(session);
+      console.log(`✅ Slots rolled back: ${oldBookings} → ${tourAfterRollback.currentBookings}`);
 
       await session.commitTransaction();
       
@@ -419,8 +424,8 @@ router.post('/momo-notify', async (req, res) => {
       await payment.save({ session });
       console.log("✅ [Payment Router] Payment status updated to Confirmed");
 
-      // Update Booking status using bookingController
-      await updateBookingPaymentStatus(booking._id, "Confirmed");
+      // ✅ FIXED: Update Booking status IN TRANSACTION
+      await updateBookingPaymentStatus(booking._id, "Confirmed", session);
 
       // ⚠️ NOTE: Slots already reserved in POST /momo, no need to update again
       console.log("ℹ️ Slots already reserved during booking creation, skipping updateTourSlots");
@@ -458,16 +463,21 @@ router.post('/momo-notify', async (req, res) => {
       payment.status = "Failed";
       await payment.save({ session });
       
-      // Update booking status using bookingController
-      await updateBookingPaymentStatus(booking._id, "Failed");
+      // ✅ FIXED: Update booking status IN TRANSACTION
+      await updateBookingPaymentStatus(booking._id, "Failed", session);
       
-      // ✅ Rollback reserved slots
-      console.log(`🔄 Rolling back ${booking.guestSize} slots...`);
-      await rollbackTourSlots(booking.tourId, booking.guestSize);
+      // ✅ FIXED: Rollback reserved slots IN TRANSACTION with idempotency check
+      // Check if booking was already cancelled by return URL handler
+      if (booking.paymentStatus !== "Cancelled" && booking.paymentStatus !== "Failed") {
+        console.log(`🔄 Rolling back ${booking.guestSize} slots...`);
+        await rollbackTourSlots(booking.tourId, booking.guestSize, session);
+      } else {
+        console.log("ℹ️ Booking already cancelled/failed, slots already rolled back. Skipping duplicate rollback.");
+      }
       
       await session.commitTransaction();
       
-      console.log("✅ [Payment Router] Payment & Booking marked as Failed, slots rolled back");
+      console.log("✅ [Payment Router] Payment & Booking marked as Failed, slots handled");
       return res.status(200).json({ message: "Payment failed, statuses updated" });
     }
 

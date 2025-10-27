@@ -75,44 +75,67 @@ export const createBookingFromPayment = async (bookingData) => {
   return { booking: newBooking, tour };
 };
 
-// ✅ HELPER: Update booking payment status
-export const updateBookingPaymentStatus = async (bookingId, paymentStatus) => {
-  const booking = await Booking.findById(bookingId);
+// ✅ FIXED: Update booking payment status with session support
+export const updateBookingPaymentStatus = async (bookingId, paymentStatus, session = null) => {
+  const booking = await Booking.findById(bookingId).session(session);
   if (!booking) {
     throw new Error("Booking không tồn tại");
   }
 
   booking.paymentStatus = paymentStatus;
-  await booking.save();
-  console.log(`✅ [BookingController] Booking ${bookingId} status updated to ${paymentStatus}`);
+  
+  // Save with session if provided (for transaction support)
+  if (session) {
+    await booking.save({ session });
+  } else {
+    await booking.save();
+  }
+  
+  console.log(`✅ [BookingController] Booking ${bookingId} status updated to ${paymentStatus}${session ? ' (in transaction)' : ''}`);
 
   return booking;
 };
 
-// ✅ HELPER: Update tour slots
-export const updateTourSlots = async (tourId, guestSize) => {
-  const tour = await Tour.findById(tourId);
+// ✅ FIXED: Update tour slots with session support
+export const updateTourSlots = async (tourId, guestSize, session = null) => {
+  const tour = await Tour.findById(tourId).session(session);
   if (!tour) {
     throw new Error("Tour không tồn tại");
   }
 
+  const oldBookings = tour.currentBookings;
   tour.currentBookings += guestSize;
-  await tour.save();
-  console.log(`✅ [BookingController] Tour ${tourId} slots updated: ${tour.currentBookings}`);
+  
+  // Save with session if provided (for transaction support)
+  if (session) {
+    await tour.save({ session });
+  } else {
+    await tour.save();
+  }
+  
+  console.log(`✅ [BookingController] Tour ${tourId} slots updated: ${oldBookings} → ${tour.currentBookings}${session ? ' (in transaction)' : ''}`);
 
   return tour;
 };
 
-// ✅ HELPER: Rollback tour slots (for cancelled/failed payments)
-export const rollbackTourSlots = async (tourId, guestSize) => {
-  const tour = await Tour.findById(tourId);
+// ✅ FIXED: Rollback tour slots with session support
+export const rollbackTourSlots = async (tourId, guestSize, session = null) => {
+  const tour = await Tour.findById(tourId).session(session);
   if (!tour) {
     throw new Error("Tour không tồn tại");
   }
 
+  const oldBookings = tour.currentBookings;
   tour.currentBookings -= guestSize;
-  await tour.save();
-  console.log(`✅ [BookingController] Tour ${tourId} slots rolled back: ${tour.currentBookings}`);
+  
+  // Save with session if provided (for transaction support)
+  if (session) {
+    await tour.save({ session });
+  } else {
+    await tour.save();
+  }
+  
+  console.log(`✅ [BookingController] Tour ${tourId} slots rolled back: ${oldBookings} → ${tour.currentBookings}${session ? ' (in transaction)' : ''}`);
 
   return tour;
 };
