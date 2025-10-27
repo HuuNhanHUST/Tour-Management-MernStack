@@ -73,7 +73,11 @@ const AdminChatPanel = () => {
   const handleReceiveMessage = useCallback(
     (msg) => {
       if (msg.chatRoomId === selectedRoom) {
-        setChat((prev) => [...prev, msg]);
+        // ✅ FIX: Skip own messages to prevent duplicates
+        // Own messages are already added via API response
+        if (String(msg.senderId) !== String(user._id)) {
+          setChat((prev) => [...prev, msg]);
+        }
       } else {
         setUnreadCounts((prev) => ({
           ...prev,
@@ -81,7 +85,7 @@ const AdminChatPanel = () => {
         }));
       }
     },
-    [selectedRoom]
+    [selectedRoom, user._id]
   );
 
   useEffect(() => {
@@ -101,8 +105,14 @@ text: message
       }, { withCredentials: true });
 
       const savedMsg = res.data.data;
+      
+      // ✅ Add message locally immediately for responsive UX
       setChat((prev) => [...prev, savedMsg]);
+      
+      // ✅ Emit to socket - will broadcast to other users only
+      // (handleReceiveMessage skips own messages to prevent duplicates)
       socket.emit("sendMessage", savedMsg);
+      
       setMessage("");
     } catch (err) {
       console.error("Lỗi gửi tin nhắn:", err.response?.data || err.message);

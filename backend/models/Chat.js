@@ -10,6 +10,7 @@ const chatSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,  // ✅ dùng ObjectId
     ref: "User",
     required: true,
+    index: true,  // ✅ Add index for faster queries
   },
   text: {
     type: String,
@@ -20,5 +21,8 @@ const chatSchema = new mongoose.Schema({
     default: Date.now,
   },
 }, { timestamps: true });
+
+// ✅ Compound index for efficient room-based queries with sorting
+chatSchema.index({ chatRoomId: 1, createdAt: 1 });
 
 export default mongoose.model("Chat", chatSchema);

@@ -44,11 +44,15 @@ const ChatPopup = () => {
   const handleReceiveMessage = useCallback(
     (msg) => {
       if (msg.chatRoomId === chatRoomId) {
-        setChat((prev) => [...prev, msg]);
+        // ✅ FIX: Skip own messages to prevent duplicates
+        // Own messages are already added via API response
+        if (String(msg.senderId) !== String(user._id)) {
+          setChat((prev) => [...prev, msg]);
+        }
         if (!open) setHasNewMessage(true);
       }
     },
-    [chatRoomId, open]
+    [chatRoomId, open, user._id]
   );
 
   useEffect(() => {
@@ -73,8 +77,14 @@ const ChatPopup = () => {
     try {
       const res = await axios.post("http://localhost:4000/api/v1/chat/send", newMsg, { withCredentials: true });
       const savedMessage = res.data.data;
+      
+      // ✅ Add message locally immediately for responsive UX
       setChat((prev) => [...prev, savedMessage]);
+      
+      // ✅ Emit to socket - will broadcast to other users only
+      // (handleReceiveMessage skips own messages to prevent duplicates)
       socket.emit("sendMessage", savedMessage);
+      
       setMessage("");
     } catch (err) {
       console.error("Lỗi lưu tin nhắn:", err.message);

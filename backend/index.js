@@ -79,9 +79,29 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", (message) => {
-    const { chatRoomId, senderId, text } = message;
-    console.log(`📩 Message in room ${chatRoomId} from ${senderId}: ${text}`);
-    socket.to(chatRoomId).emit("receiveMessage", message);
+    const { chatRoomId, text } = message;
+    
+    // ✅ SECURITY FIX: Override senderId from authenticated socket connection
+    // This prevents clients from faking senderId
+    const authenticatedUserId = socket.handshake.query.userId;
+    
+    if (!authenticatedUserId || !mongoose.Types.ObjectId.isValid(authenticatedUserId)) {
+      console.error("❌ Invalid userId in socket - message rejected");
+      return;
+    }
+    
+    // Override senderId with authenticated userId
+    const secureMessage = {
+      ...message,
+      senderId: authenticatedUserId,
+      chatRoomId,
+      text
+    };
+    
+    console.log(`📩 Message in room ${chatRoomId} from ${authenticatedUserId}: ${text}`);
+    
+    // Broadcast to everyone in the room INCLUDING sender
+    io.to(chatRoomId).emit("receiveMessage", secureMessage);
   });
 
   socket.on("disconnect", async () => {
