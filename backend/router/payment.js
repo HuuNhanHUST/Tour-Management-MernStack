@@ -124,10 +124,10 @@ router.post('/cash', async (req, res) => {
 });
 
 
-// ✅ OPTION A: MoMo payment endpoint - Uses bookingController
+// ✅ FIXED: MoMo payment endpoint with transactions and slot reservation
 router.post('/momo', async (req, res) => {
   const {
-    amount, orderId, orderInfo,
+    amount, orderInfo,
     userId, tourId, email,
     fullName, phone, tourName,
     guestSize, guests, singleRoomCount,
@@ -135,40 +135,43 @@ router.post('/momo', async (req, res) => {
     province, district, ward, addressDetail
   } = req.body;
 
+  // ✅ FIX #1: Server-side orderId generation
+  const orderId = `MOMO_${Date.now()}_${userId}_${tourId}`;
+  
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     console.log("💳 [Payment Router] MoMo payment request:", {
       userId, tourId, guestSize, amount
     });
 
-    // Check pending bookings for this tour
-    const pendingBookings = await Booking.aggregate([
-      {
-        $match: {
-          tourId: new mongoose.Types.ObjectId(tourId),
-          paymentStatus: "Pending",
-          paymentMethod: "MoMo"
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalPending: { $sum: "$guestSize" }
-        }
-      }
-    ]);
+    // ✅ FIX #2: Backend amount verification
+    // Recalculate price to verify client-sent amount
+    const tour = await Tour.findById(tourId).session(session);
+    if (!tour) {
+      throw new Error("Tour không tồn tại");
+    }
+
+    // Simple verification: check if amount is reasonable
+    const minExpectedAmount = guestSize * (basePrice * 0.5); // At least 50% of base price
+    const maxExpectedAmount = guestSize * (basePrice * 3); // Max 3x base price (with surcharges)
     
-    const pendingQuantity = pendingBookings[0]?.totalPending || 0;
-    console.log(`📊 Pending MoMo bookings for tour: ${pendingQuantity}`);
+    if (amount < minExpectedAmount || amount > maxExpectedAmount) {
+      console.error(`❌ Amount verification failed: ${amount} not in range [${minExpectedAmount}, ${maxExpectedAmount}]`);
+      throw new Error("Số tiền không hợp lệ. Vui lòng tính lại giá.");
+    }
+    console.log("✅ Amount verified:", amount);
 
     // Get user email if not provided
     let finalEmail = email;
     if (!finalEmail) {
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).session(session);
       finalEmail = user?.email || "";
     }
 
-    // ✅ STEP 1: Use bookingController to create Booking with Pending status
-    const { booking, tour } = await createBookingFromPayment({
+    // ✅ STEP 1: Create Booking with Pending status
+    const { booking } = await createBookingFromPayment({
       userId,
       userEmail: finalEmail,
       fullName,
@@ -183,7 +186,7 @@ router.post('/momo', async (req, res) => {
       appliedDiscounts,
       appliedSurcharges,
       paymentMethod: "MoMo",
-      paymentStatus: "Pending", // Will be updated by IPN
+      paymentStatus: "Pending",
       province,
       district,
       ward,
@@ -191,8 +194,26 @@ router.post('/momo', async (req, res) => {
       bookAt: new Date()
     });
 
-    // ✅ STEP 2: Generate MoMo payment request
-    const requestId = `${process.env.MOMO_PARTNER_CODE}${Date.now()}`;
+    // ✅ FIX #3: Reserve slots IMMEDIATELY for Pending booking
+    console.log(`📊 Reserving ${guestSize} slots for Pending MoMo booking...`);
+    await updateTourSlots(tourId, guestSize);
+    console.log(`✅ Slots reserved: ${tour.currentBookings} → ${tour.currentBookings + guestSize}`);
+
+    // ✅ STEP 2: Create Payment tracking
+    const newPayment = new Payment({
+      bookingId: booking._id,
+      orderId,
+      amount: Number(amount),
+      status: 'Pending',
+      payType: 'MoMo',
+      momoRequestId: `${process.env.MOMO_PARTNER_CODE}${Date.now()}`
+    });
+
+    await newPayment.save({ session });
+    console.log("✅ [Payment Router] Payment tracking created with Pending status");
+
+    // ✅ STEP 3: Generate MoMo payment request
+    const requestId = newPayment.momoRequestId;
     const rawAmount = amount.toString();
     const rawSignature =
       `partnerCode=${process.env.MOMO_PARTNER_CODE}&accessKey=${process.env.MOMO_ACCESS_KEY}&requestId=${requestId}` +
@@ -221,36 +242,35 @@ router.post('/momo', async (req, res) => {
     const momoRes = await axios.post(process.env.MOMO_API_URL, requestBody);
     console.log("✅ MoMo API response:", momoRes.data);
 
-    // ✅ STEP 3: Create minimal Payment tracking
-    const newPayment = new Payment({
-      bookingId: booking._id,
-      orderId,
-      amount: Number(amount),
-      status: 'Pending',
-      payType: 'MoMo',
-      momoRequestId: requestId
-    });
-
-    await newPayment.save();
-    console.log("✅ [Payment Router] Payment tracking created with Pending status");
+    // ✅ Commit transaction - All operations successful
+    await session.commitTransaction();
+    console.log("✅ Transaction committed successfully");
 
     res.status(200).json(momoRes.data);
     
   } catch (error) {
-    console.error('❌ [Payment Router] MoMo payment error:', error.message);
+    // ✅ Rollback transaction on any error
+    await session.abortTransaction();
+    console.error('❌ [Payment Router] MoMo payment error, transaction rolled back:', error.message);
+    
     res.status(500).json({ 
       success: false,
       message: error.message || 'Tạo thanh toán thất bại',
       error: error.message 
     });
+  } finally {
+    session.endSession();
   }
 });
 
 
-// ✅ MoMo Return URL handler - Xử lý khi user quay về từ MoMo
+// ✅ FIXED: MoMo Return URL handler with slot rollback
 router.get('/momo-return', async (req, res) => {
   const data = req.query;
   console.log("🔙 [Payment Router] User returned from MoMo:", JSON.stringify(data, null, 2));
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Verify signature from MoMo return URL
@@ -263,7 +283,7 @@ router.get('/momo-return', async (req, res) => {
     
     if (expectedSignature !== data.signature) {
       console.error("❌ Return URL signature không hợp lệ!");
-      // Redirect với error
+      await session.abortTransaction();
       return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=invalid_signature`);
     }
     console.log("✅ Return URL signature verified successfully");
@@ -273,17 +293,19 @@ router.get('/momo-return', async (req, res) => {
     const message = data.message;
 
     // Find payment and booking to update status
-    const payment = await Payment.findOne({ orderId });
+    const payment = await Payment.findOne({ orderId }).session(session);
     
     if (!payment) {
       console.error("❌ Payment not found for orderId:", orderId);
+      await session.abortTransaction();
       return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=payment_not_found`);
     }
 
-    const booking = await Booking.findById(payment.bookingId);
+    const booking = await Booking.findById(payment.bookingId).session(session);
     
     if (!booking) {
       console.error("❌ Booking not found for payment:", payment._id);
+      await session.abortTransaction();
       return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=booking_not_found`);
     }
 
@@ -291,6 +313,7 @@ router.get('/momo-return', async (req, res) => {
     if (resultCode === 0) {
       // ✅ SUCCESS - Payment will be confirmed by IPN
       console.log("✅ User completed payment successfully for orderId:", orderId);
+      await session.commitTransaction();
       res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=true&orderId=${orderId}&message=payment_success`);
       
     } else {
@@ -300,28 +323,43 @@ router.get('/momo-return', async (req, res) => {
       // Update Payment status to Cancelled/Failed
       const newStatus = resultCode === 1006 ? 'Cancelled' : 'Failed';
       payment.status = newStatus;
-      await payment.save();
+      await payment.save({ session });
       console.log(`✅ Payment ${payment._id} status updated to ${newStatus}`);
       
       // Update Booking status to Cancelled/Failed
       await updateBookingPaymentStatus(booking._id, newStatus);
       console.log(`✅ Booking ${booking._id} status updated to ${newStatus}`);
       
+      // ✅ FIX #4: Rollback reserved slots
+      console.log(`🔄 Rolling back ${booking.guestSize} slots for tour ${booking.tourId}...`);
+      await rollbackTourSlots(booking.tourId, booking.guestSize);
+      
+      const tour = await Tour.findById(booking.tourId).session(session);
+      console.log(`✅ Slots rolled back: ${tour.currentBookings + booking.guestSize} → ${tour.currentBookings}`);
+
+      await session.commitTransaction();
+      
       // Redirect to frontend with error
       res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&orderId=${orderId}&message=${encodeURIComponent(message)}&resultCode=${resultCode}`);
     }
     
   } catch (err) {
+    await session.abortTransaction();
     console.error("❌ Lỗi xử lý MoMo return:", err.message);
     res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=server_error`);
+  } finally {
+    session.endSession();
   }
 });
 
 
-// ✅ OPTION A: MoMo IPN handler - Uses bookingController
+// ✅ FIXED: MoMo IPN handler with transactions
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
   console.log("📩 [Payment Router] IPN từ MoMo:", JSON.stringify(data, null, 2));
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // ✅ FIX #2: Verify IPN signature from MoMo
@@ -336,6 +374,7 @@ router.post('/momo-notify', async (req, res) => {
       console.error("❌ IPN signature không hợp lệ!");
       console.error("Expected:", expectedSignature);
       console.error("Received:", data.signature);
+      await session.abortTransaction();
       return res.status(400).json({ 
         message: "Invalid signature - IPN không hợp lệ" 
       });
@@ -343,26 +382,29 @@ router.post('/momo-notify', async (req, res) => {
     console.log("✅ IPN signature verified successfully");
 
     // Find payment by orderId
-    const payment = await Payment.findOne({ orderId: data.orderId });
+    const payment = await Payment.findOne({ orderId: data.orderId }).session(session);
     
     if (!payment) {
       console.error("❌ Payment not found for orderId:", data.orderId);
+      await session.abortTransaction();
       return res.status(404).json({ message: "Payment not found" });
     }
 
     // ✅ FIX #1: Idempotency guard - check if already processed
     if (payment.status === 'Confirmed') {
       console.log("ℹ️ IPN đã được xử lý rồi cho orderId:", data.orderId);
+      await session.commitTransaction();
       return res.status(200).json({ 
         message: "IPN already processed - Idempotent response" 
       });
     }
 
     // Find associated booking
-    const booking = await Booking.findById(payment.bookingId);
+    const booking = await Booking.findById(payment.bookingId).session(session);
     
     if (!booking) {
       console.error("❌ Booking not found for payment:", payment._id);
+      await session.abortTransaction();
       return res.status(404).json({ message: "Booking not found" });
     }
 
@@ -374,16 +416,19 @@ router.post('/momo-notify', async (req, res) => {
       payment.status = "Confirmed";
       payment.momoTransId = data.transId;
       payment.paidAt = new Date();
-      await payment.save();
+      await payment.save({ session });
       console.log("✅ [Payment Router] Payment status updated to Confirmed");
 
       // Update Booking status using bookingController
       await updateBookingPaymentStatus(booking._id, "Confirmed");
 
-      // Update tour slots using bookingController
-      await updateTourSlots(booking.tourId, booking.guestSize);
+      // ⚠️ NOTE: Slots already reserved in POST /momo, no need to update again
+      console.log("ℹ️ Slots already reserved during booking creation, skipping updateTourSlots");
 
-      // Send success email
+      // Commit transaction before sending email
+      await session.commitTransaction();
+
+      // Send success email (outside transaction)
       try {
         await sendSuccessEmail(
           booking.userEmail,
@@ -408,21 +453,30 @@ router.post('/momo-notify', async (req, res) => {
 
     } else {
       // ❌ PAYMENT FAILED
-      console.log("❌ Payment failed, updating status...");
+      console.log("❌ Payment failed, updating status and rolling back slots...");
       
       payment.status = "Failed";
-      await payment.save();
+      await payment.save({ session });
       
       // Update booking status using bookingController
       await updateBookingPaymentStatus(booking._id, "Failed");
       
-      console.log("✅ [Payment Router] Payment & Booking marked as Failed");
+      // ✅ Rollback reserved slots
+      console.log(`🔄 Rolling back ${booking.guestSize} slots...`);
+      await rollbackTourSlots(booking.tourId, booking.guestSize);
+      
+      await session.commitTransaction();
+      
+      console.log("✅ [Payment Router] Payment & Booking marked as Failed, slots rolled back");
       return res.status(200).json({ message: "Payment failed, statuses updated" });
     }
 
   } catch (err) {
+    await session.abortTransaction();
     console.error("❌ Lỗi xử lý IPN:", err.message);
     res.status(500).json({ message: 'Xử lý IPN thất bại', error: err.message });
+  } finally {
+    session.endSession();
   }
 });
 

@@ -74,12 +74,12 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
           NotificationManager.error(res.data.message || "Đặt tour thất bại");
         }
       } else if (selectedPaymentMethod === "MoMo") {
-        const orderId = `ORDER_${Date.now()}`;
+        // ✅ FIX: Remove client-side orderId generation - server will generate it
         const momoPaymentData = {
           ...paymentData,
           amount: totalAmount,
-          orderId,
-          orderInfo: `Thanh toán tour: ${tour.title}`
+          orderInfo: `Thanh toán tour: ${tour.title}`,
+          email: userEmail
         };
 
         const response = await axios.post(
