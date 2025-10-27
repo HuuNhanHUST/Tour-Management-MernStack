@@ -247,6 +247,49 @@ router.post('/momo', async (req, res) => {
 });
 
 
+// ✅ MoMo Return URL handler - Xử lý khi user quay về từ MoMo
+router.get('/momo-return', async (req, res) => {
+  const data = req.query;
+  console.log("🔙 [Payment Router] User returned from MoMo:", JSON.stringify(data, null, 2));
+
+  try {
+    // Verify signature from MoMo return URL
+    const rawSignature = 
+      `accessKey=${process.env.MOMO_ACCESS_KEY}&amount=${data.amount}&extraData=${data.extraData || ''}&message=${data.message}&orderId=${data.orderId}&orderInfo=${data.orderInfo}&orderType=${data.orderType}&partnerCode=${data.partnerCode}&payType=${data.payType}&requestId=${data.requestId}&responseTime=${data.responseTime}&resultCode=${data.resultCode}&transId=${data.transId}`;
+    
+    const expectedSignature = crypto.createHmac('sha256', process.env.MOMO_SECRET_KEY)
+      .update(rawSignature)
+      .digest('hex');
+    
+    if (expectedSignature !== data.signature) {
+      console.error("❌ Return URL signature không hợp lệ!");
+      // Redirect với error
+      return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=invalid_signature`);
+    }
+    console.log("✅ Return URL signature verified successfully");
+
+    const resultCode = parseInt(data.resultCode);
+    const orderId = data.orderId;
+    const message = data.message;
+
+    // Redirect based on result
+    if (resultCode === 0) {
+      // Success
+      console.log("✅ User completed payment successfully for orderId:", orderId);
+      res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=true&orderId=${orderId}&message=payment_success`);
+    } else {
+      // Failed or Cancelled
+      console.log(`❌ Payment failed/cancelled for orderId: ${orderId}, resultCode: ${resultCode}`);
+      res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&orderId=${orderId}&message=${encodeURIComponent(message)}&resultCode=${resultCode}`);
+    }
+    
+  } catch (err) {
+    console.error("❌ Lỗi xử lý MoMo return:", err.message);
+    res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=server_error`);
+  }
+});
+
+
 // ✅ OPTION A: MoMo IPN handler - Uses bookingController
 router.post('/momo-notify', async (req, res) => {
   const data = req.body;
