@@ -272,14 +272,42 @@ router.get('/momo-return', async (req, res) => {
     const orderId = data.orderId;
     const message = data.message;
 
-    // Redirect based on result
+    // Find payment and booking to update status
+    const payment = await Payment.findOne({ orderId });
+    
+    if (!payment) {
+      console.error("❌ Payment not found for orderId:", orderId);
+      return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=payment_not_found`);
+    }
+
+    const booking = await Booking.findById(payment.bookingId);
+    
+    if (!booking) {
+      console.error("❌ Booking not found for payment:", payment._id);
+      return res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&message=booking_not_found`);
+    }
+
+    // Handle based on result code
     if (resultCode === 0) {
-      // Success
+      // ✅ SUCCESS - Payment will be confirmed by IPN
       console.log("✅ User completed payment successfully for orderId:", orderId);
       res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=true&orderId=${orderId}&message=payment_success`);
+      
     } else {
-      // Failed or Cancelled
+      // ❌ FAILED or CANCELLED
       console.log(`❌ Payment failed/cancelled for orderId: ${orderId}, resultCode: ${resultCode}`);
+      
+      // Update Payment status to Cancelled/Failed
+      const newStatus = resultCode === 1006 ? 'Cancelled' : 'Failed';
+      payment.status = newStatus;
+      await payment.save();
+      console.log(`✅ Payment ${payment._id} status updated to ${newStatus}`);
+      
+      // Update Booking status to Cancelled/Failed
+      await updateBookingPaymentStatus(booking._id, newStatus);
+      console.log(`✅ Booking ${booking._id} status updated to ${newStatus}`);
+      
+      // Redirect to frontend with error
       res.redirect(`${process.env.FRONTEND_URL}/thank-you?success=false&orderId=${orderId}&message=${encodeURIComponent(message)}&resultCode=${resultCode}`);
     }
     
