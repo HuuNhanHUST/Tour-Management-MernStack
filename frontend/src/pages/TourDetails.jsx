@@ -9,7 +9,7 @@ import { Container, Row, Col, Form } from "reactstrap";
 import { useParams } from "react-router-dom";
 import caculateAvgRating from "../utils/avgRating";
 import avatar from "../assets/images/avatar.jpg";
-import Booking from "../components/Booking/Booking";
+import MultiStepBooking from "../components/Booking/MultiStepBooking";
 import ThongTinGiaTour from "../components/Booking/ThongTinGiaTour";
 import Newsletter from "../shared/Newsleter";
 import useFetch from "../hooks/useFetch";
@@ -430,7 +430,7 @@ const TourDetails = () => {
             </Col>
 
             <Col lg="4">
-              <Booking tour={tour} avgRating={avgRating} />
+              <MultiStepBooking tour={tour} avgRating={avgRating} />
             </Col>
           </Row>
         </Container>
