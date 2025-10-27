@@ -90,6 +90,11 @@ const bookingSchema = new mongoose.Schema(
       enum: ["Pending", "Confirmed", "Failed", "Cancelled"],
       default: "Pending"
     },
+    // Track if warning email has been sent (to avoid duplicates)
+    warningEmailSent: {
+      type: Boolean,
+      default: false
+    },
 province: {
   code: { type: String, required: true },
   name: { type: String, required: true },
