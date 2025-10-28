@@ -15,7 +15,7 @@ export const sendMessage = async (req, res) => {
       senderId,
       chatRoomId,
       text,
-      createdAt: new Date()
+      // ✅ Removed createdAt - timestamps: true handles this automatically
     });
 
     const saved = await newMessage.save();
