@@ -359,7 +359,7 @@ const EditTour = () => {
           <select
             className="form-select"
             name="tourGuide"
-            value={tour.tourGuide?._id || ""}
+            value={tour.tourGuide?._id || tour.tourGuide || ""}
             onChange={(e) => setTour({ ...tour, tourGuide: e.target.value || null })}
           >
             <option value="">-- Chọn hướng dẫn viên --</option>

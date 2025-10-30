@@ -383,12 +383,13 @@
 }
 
 .tour-guide-photo {
-  width: 120px;
-  height: 120px;
+  width: 20px;
+  height: 350px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--secondary-color);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .tour-guide-details h5 {

@@ -38,11 +38,11 @@ const AddTour = () => {
   useEffect(() => {
     const fetchTourCreationData = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/v1/tours/creation-data", {
+        const res = await axios.get("http://localhost:4000/api/v1/tour-guides", {
           withCredentials: true,
         });
         // ✅ FIX: Đảm bảo _id là string để select hoạt động đúng
-        setTourGuides(res.data.data.tourGuides.map(guide => ({ ...guide, _id: guide._id.toString() })));
+        setTourGuides(res.data.data.map(guide => ({ ...guide, _id: guide._id.toString() })));
       } catch (err) {
         console.error("Lỗi khi lấy danh sách hướng dẫn viên:", err);
       }

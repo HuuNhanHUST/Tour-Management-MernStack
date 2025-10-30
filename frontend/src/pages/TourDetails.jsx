@@ -312,9 +312,9 @@ const TourDetails = () => {
                         <h4>Hướng dẫn viên của bạn</h4>
                       </div>
                       <div className="tour-guide-content">
-                        <img 
-                          src={tour.tourGuide.photo ? `http://localhost:4000/${tour.tourGuide.photo}` : avatar} 
-                          alt={tour.tourGuide.name} 
+                        <img
+                          src={tour.tourGuide.photo ? (tour.tourGuide.photo.startsWith('http') ? tour.tourGuide.photo : `http://localhost:4000/${tour.tourGuide.photo}`) : avatar}
+                          alt={tour.tourGuide.name}
                           className="tour-guide-photo"
                         />
                         <div className="tour-guide-details">
