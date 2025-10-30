@@ -46,13 +46,13 @@ const ChatPopup = () => {
       if (msg.chatRoomId === chatRoomId) {
         // ✅ FIX: Skip own messages to prevent duplicates
         // Own messages are already added via API response
-        if (String(msg.senderId) !== String(user._id)) {
+        if (String(msg.senderId) !== String(user?._id)) {
           setChat((prev) => [...prev, msg]);
         }
         if (!open) setHasNewMessage(true);
       }
     },
-    [chatRoomId, open, user._id]
+    [chatRoomId, open, user?._id]
   );
 
   useEffect(() => {
@@ -117,7 +117,7 @@ const ChatPopup = () => {
 
           <div className="chat-body">
             {chat.map((msg, idx) => {
-              const isMe = String(msg.senderId) === String(user._id);
+              const isMe = String(msg.senderId) === String(user?._id);
               const isAdmin = msg.senderRole === "admin";
 
               return (
