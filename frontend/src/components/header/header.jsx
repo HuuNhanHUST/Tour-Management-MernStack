@@ -7,14 +7,14 @@ import "./header.css";
 
 import { AuthContext } from "../../context/AuthContext";
 
-// ✅ Menu chính (Lịch sử thanh toán chỉ hiển thị khi có user)
+// ✅ Menu chính (Lịch sử thanh toán và Tour đã đặt chỉ hiển thị khi có user)
 const nav_links = [
   { path: "/home", display: "Home" },
   { path: "/about", display: "About" },
   { path: "/tour", display: "Tours" },
-  { path: "/payment-history", display: "Lịch sử thanh toán" } ,
+  { path: "/my-bookings", display: "Tour đã đặt" },
+  { path: "/payment-history", display: "Lịch sử thanh toán" },
   { path: "/saved-tours", display: "Yêu thích" }
-
 ];
 
 const Header = () => {
@@ -65,7 +65,7 @@ const Header = () => {
             <div className={`navigation menu ${menuOpen ? "open" : ""}`}>
               <ul className="d-flex align-items-center gap-5">
                 {nav_links
-                  .filter((item) => (item.path !== "/payment-history" && item.path !== "/saved-tours") || user )
+                  .filter((item) => (item.path !== "/payment-history" && item.path !== "/saved-tours" && item.path !== "/my-bookings") || user )
                   .map((item, index) => (
                     <li className="nav__item" key={index}>
                       <NavLink

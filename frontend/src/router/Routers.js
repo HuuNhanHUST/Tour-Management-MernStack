@@ -11,6 +11,8 @@ import SearchResultList from '../pages/SearchResultList';
 import ThankYou from '../pages/ThankYou';
 import SavedTours from '../pages/SavedTours';
 import PaymentHistory from '../pages/PaymentHistory';
+import MyBookings from '../pages/MyBookings';
+import BookingDetails from '../pages/BookingDetails';
 
 const Routers = () => {
   return (
@@ -26,6 +28,8 @@ const Routers = () => {
       <Route path='/tours/search' element={<SearchResultList />} />
       <Route path="/saved-tours" element={<SavedTours />} />
       <Route path="/payment-history" element={<PaymentHistory />} />
+      <Route path="/my-bookings" element={<MyBookings />} />
+      <Route path="/booking/:id" element={<BookingDetails />} />
     </Routes>
   );
 };
