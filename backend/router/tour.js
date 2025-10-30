@@ -9,7 +9,8 @@ import {
   getSingleTour,
   getTourBySearch,
   getTourCount,
-  updateTour
+  updateTour,
+  getTourCreationData
 } from "../controllers/tourController.js";
 import { verifyAdmin } from "../utils/verifyToken.js";
 
@@ -43,6 +44,9 @@ route.get("/search/getTourCount", getTourCount);
 
 // ✅ Get tất cả tour (phân trang)
 route.get("/", getAllTour);
+
+// ✅ Get dữ liệu tạo tour (hướng dẫn viên, v.v.)
+route.get("/creation-data", verifyAdmin, getTourCreationData);
 
 // ✅ Get 1 tour
 route.get("/:id", getSingleTour);

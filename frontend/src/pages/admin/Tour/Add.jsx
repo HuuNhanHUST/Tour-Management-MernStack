@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const AddTour = () => {
   const navigate = useNavigate();
   const [tour, setTour] = useState({
+    tourGuide: "", // ✅ FIX: Thêm tourGuide vào state ban đầu
     title: "",
     city: "",
     address: "",
@@ -31,16 +32,39 @@ const AddTour = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFiles, setPhotoFiles] = useState([]); // ảnh phụ
   const [photoPreviews, setPhotoPreviews] = useState([]); // preview ảnh phụ
+  const [tourGuides, setTourGuides] = useState([]); // ✅ State để lưu danh sách hướng dẫn viên
+
+  // ✅ Fetch danh sách hướng dẫn viên khi component được mount
+  useEffect(() => {
+    const fetchTourCreationData = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/v1/tours/creation-data", {
+          withCredentials: true,
+        });
+        // ✅ FIX: Đảm bảo _id là string để select hoạt động đúng
+        setTourGuides(res.data.data.tourGuides.map(guide => ({ ...guide, _id: guide._id.toString() })));
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách hướng dẫn viên:", err);
+      }
+    };
+    fetchTourCreationData();
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    let newValue = value;
-
-    if (type === "text" && ["distance", "price", "maxGroupSize", "minGroupSize"].includes(name)) {
-      newValue = value.replace(/^0+/, "") || "0";
+    const { name, value } = e.target;
+    const numericFields = ["distance", "price", "maxGroupSize", "minGroupSize"];
+    
+    // Chỉ áp dụng logic xử lý số cho các trường cụ thể
+    // ✅ FIX: Tách biệt logic cho trường số và các trường khác để tránh lỗi
+    if (numericFields.includes(name)) {
+      // Xử lý cho trường số: loại bỏ số 0 ở đầu
+      const sanitizedValue = value.replace(/^0+(?=\d)/, '');
+      setTour({ ...tour, [name]: sanitizedValue });
+    } else {
+      // Xử lý cho các trường còn lại (text, select, date, v.v.)
+      // Cập nhật giá trị một cách bình thường
+      setTour({ ...tour, [name]: value });
     }
-
-    setTour({ ...tour, [name]: newValue });
   };
 
   const handleImageChange = (e) => {
@@ -105,7 +129,7 @@ const AddTour = () => {
         formData.append("photos", file);
       });
 
-      await axios.post("http://localhost:4000/api/v1/tour", formData, {
+      await axios.post("http://localhost:4000/api/v1/tours", formData, { // ✅ FIX: Sửa endpoint từ /tour thành /tours
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
@@ -164,6 +188,24 @@ const AddTour = () => {
           <select className="form-select" name="featured" value={tour.featured} onChange={(e) => setTour({ ...tour, featured: e.target.value === "true" })}>
             <option value="false">Không</option>
             <option value="true">Có</option>
+          </select>
+        </div>
+
+        {/* ✅ UI: Thêm dropdown chọn hướng dẫn viên */}
+        <div className="col-md-6">
+          <label className="form-label">Hướng dẫn viên</label>
+          <select
+            className="form-select"
+            name="tourGuide"
+            value={tour.tourGuide}
+            onChange={handleChange}
+          >
+            <option value="">-- Chọn hướng dẫn viên --</option>
+            {tourGuides.map((guide) => (
+              <option key={guide._id} value={guide._id.toString()}>
+                {guide.name}
+              </option>
+            ))}
           </select>
         </div>
 

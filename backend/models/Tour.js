@@ -102,6 +102,11 @@ const tourSchema = new mongoose.Schema(
         type: String, // Ví dụ: 'Bữa sáng', 'Bữa trưa buffet'
       }
     ],
+
+    tourGuide: {
+      type: mongoose.Types.ObjectId,
+      ref: "TourGuide",
+    },
   },
   { timestamps: true }
 );

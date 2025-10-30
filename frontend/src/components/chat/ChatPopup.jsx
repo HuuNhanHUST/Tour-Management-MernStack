@@ -14,7 +14,8 @@ const ChatPopup = () => {
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
   const bottomRef = useRef(null);
-  const chatRoomId = user?._id;
+  // ✅ FIX: Only define chatRoomId if user exists
+  const chatRoomId = user ? user._id : null;
 
   const formatTime = (isoString) => {
     const date = new Date(isoString);
@@ -27,7 +28,7 @@ const ChatPopup = () => {
   };
 
   useEffect(() => {
-    if (!open || !user) return;
+    if (!open || !chatRoomId) return;
 
     const fetchMessages = async () => {
       try {
@@ -39,38 +40,38 @@ const ChatPopup = () => {
     };
 
     fetchMessages();
-  }, [open, user, chatRoomId]);
+  }, [open, chatRoomId]);
 
   const handleReceiveMessage = useCallback(
     (msg) => {
       if (msg.chatRoomId === chatRoomId) {
         // ✅ FIX: Skip own messages to prevent duplicates
         // Own messages are already added via API response
-        if (String(msg.senderId) !== String(user._id)) {
+        if (user && String(msg.senderId) !== String(user._id)) {
           setChat((prev) => [...prev, msg]);
         }
         if (!open) setHasNewMessage(true);
       }
     },
-    [chatRoomId, open, user._id]
+    [chatRoomId, open, user?._id]
   );
-
+  
   useEffect(() => {
-    if (!socket || !user) return;
-
+    if (!socket || !chatRoomId) return;
+    
     socket.emit("joinRoom", chatRoomId);
     socket.on("receiveMessage", handleReceiveMessage);
 
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
     };
-  }, [socket, user, chatRoomId, handleReceiveMessage]);
-
+  }, [socket, chatRoomId, handleReceiveMessage]);
+  
   const handleSend = async () => {
     if (!message.trim()) return;
 
     const newMsg = {
-      chatRoomId,
+      chatRoomId: chatRoomId, // Ensure chatRoomId is passed
       text: message,
     };
 
@@ -103,6 +104,7 @@ const ChatPopup = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat]);
 
+  // ✅ CORRECT FIX: Check for user *after* all hooks have been called.
   if (!user) return null;
 
   return (

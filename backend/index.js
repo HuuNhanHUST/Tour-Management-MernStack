@@ -22,6 +22,7 @@ import favoriteRoute from './router/favorite.js';
 import userStatusRoute from './router/userStatus.js';
 import loginHistoryRoute from './router/loginHistory.js';
 import pricingRoute from './router/pricing.js';
+import tourGuideRoute from './router/tourGuide.js';
 import UserStatus from './models/UserStatus.js';
 import { startCleanupJob } from './utils/cleanupPendingBookings.js';
 
@@ -187,6 +188,7 @@ app.use('/api/v1/users', favoriteRoute);
 app.use('/api/user-status', userStatusRoute);
 app.use('/api/login-history', loginHistoryRoute);
 app.use('/api/v1/pricing', pricingRoute);
+app.use('/api/v1/tour-guides', tourGuideRoute);
 app.get("/", (req, res) => {
   res.send("✅ API đang hoạt động");
 });

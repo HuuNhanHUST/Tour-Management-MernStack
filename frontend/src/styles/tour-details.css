@@ -253,7 +253,7 @@
   .photo-gallery img {
     width: 90px;
   }
-  
+
   .tour__pricing-section {
     padding: 1rem;
   }
@@ -270,7 +270,7 @@
 }
 
 .similar-tour-title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -10px;
   left: 50%;
@@ -368,4 +368,56 @@
 .booking-btn:hover {
   background: var(--primary-color);
   color: white;
+}
+
+/* Tour Guide Section */
+.tour-guide-section {
+  margin-top: 2rem;
+}
+
+.tour-guide-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.tour-guide-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--secondary-color);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tour-guide-details h5 {
+  font-weight: 600;
+  color: var(--heading-color);
+  margin-bottom: 0.5rem;
+}
+
+.tour-guide-bio {
+  font-style: italic;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.tour-guide-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.tour-guide-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tour-guide-meta i {
+  color: var(--secondary-color);
+  font-size: 1.1rem;
 }
