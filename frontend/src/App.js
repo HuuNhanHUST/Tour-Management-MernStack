@@ -18,6 +18,9 @@ import LoginHistory from "./pages/admin/LoginHistory";
 import PricingManager from "./pages/admin/Pricing/PricingManager";
 import BookingList from "./pages/admin/Booking/List";
 import BookingDetails from "./pages/admin/Booking/Details";
+import TourGuideList from "./pages/admin/TourGuide/List.jsx";
+import AddTourGuide from "./pages/admin/TourGuide/Add.jsx";
+import EditTourGuide from "./pages/admin/TourGuide/Edit.jsx";
 
 function App() {
   const { user,loading } = useContext(AuthContext);
@@ -47,6 +50,9 @@ function App() {
           <Route path="chat" element={<AdminChatPanel />} />
           <Route path="payments" element={<PaymentList />} />
           <Route path="pricing" element={<PricingManager />} />
+          <Route path="tour-guides" element={<TourGuideList />} />
+          <Route path="tour-guides/add" element={<AddTourGuide />} />
+          <Route path="tour-guides/edit/:id" element={<EditTourGuide />} />
           <Route path="/admin/login-history" element={<LoginHistory />} />
           <Route path="bookings" element={<BookingList />} />
           <Route path="bookings/:id" element={<BookingDetails />} />

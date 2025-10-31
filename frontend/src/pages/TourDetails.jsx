@@ -310,6 +310,31 @@ const TourDetails = () => {
                     </div>
                   </div>
 
+                  {/* Hướng dẫn viên */}
+                  {tour.tourGuide && (
+                    <div className="tour__info shadow-sm tour-guide-section">
+                      <div className="tour-info-header">
+                        <i className="ri-user-star-line info-icon"></i>
+                        <h4>Hướng dẫn viên của bạn</h4>
+                      </div>
+                      <div className="tour-guide-content">
+                        <img
+                          src={tour.tourGuide.photo ? (tour.tourGuide.photo.startsWith('http') ? tour.tourGuide.photo : `http://localhost:4000/${tour.tourGuide.photo}`) : avatar}
+                          alt={tour.tourGuide.name}
+                          className="tour-guide-photo"
+                        />
+                        <div className="tour-guide-details">
+                          <h5>{tour.tourGuide.name}</h5>
+                          <p className="tour-guide-bio">{tour.tourGuide.bio}</p>
+                          <div className="tour-guide-meta">
+                            <span><i className="ri-service-line"></i> Kinh nghiệm: {tour.tourGuide.experience || 0} năm</span>
+                            <span><i className="ri-global-line"></i> Ngôn ngữ: {tour.tourGuide.languages?.join(', ') || 'Chưa cập nhật'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Đánh giá */}
                   <div className="tour__info shadow-sm">
                     <div className="tour-info-header">
