@@ -93,7 +93,7 @@ router.post('/cash', async (req, res) => {
 
     // ✅ STEP 4: Send email confirmation
     try {
-      await sendSuccessEmail(userEmail, orderId, totalAmount, fullName);
+      await sendSuccessEmail(userEmail, orderId, totalAmount, fullName, booking.confirmationNumber);
       console.log("✅ Email sent to:", userEmail);
     } catch (emailError) {
       console.error("⚠️ Email failed but booking successful:", emailError.message);
@@ -439,7 +439,8 @@ router.post('/momo-notify', async (req, res) => {
           booking.userEmail,
           payment.orderId,
           payment.amount,
-          booking.fullName
+          booking.fullName,
+          booking.confirmationNumber
         );
         console.log("✅ Email sent to:", booking.userEmail);
       } catch (emailError) {
@@ -600,7 +601,8 @@ router.put('/:id/status', async (req, res) => {
             booking.userEmail,
             payment.orderId,
             payment.amount,
-            booking.fullName
+            booking.fullName,
+            booking.confirmationNumber
           );
           console.log("✅ Confirmation email sent");
         } catch (emailError) {
@@ -718,7 +720,8 @@ router.get('/test-email', async (req, res) => {
       payment.bookingId.userEmail,
       payment.orderId,
       payment.amount,
-      payment.bookingId.fullName
+      payment.bookingId.fullName,
+      payment.bookingId.confirmationNumber
     );
 
     res.send("✅ Đã gửi email test thành công");
