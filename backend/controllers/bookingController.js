@@ -45,6 +45,56 @@ export const createBookingFromPayment = async (bookingData) => {
     throw new Error("Thông tin khách không đầy đủ hoặc không khớp với số lượng khách");
   }
 
+  // ✅ CRITICAL FIX 1: Limit concurrent Pending bookings per user
+  const pendingCount = await Booking.countDocuments({
+    userId: new mongoose.Types.ObjectId(userId),
+    paymentStatus: 'Pending'
+  });
+  
+  if (pendingCount >= 3) {
+    throw new Error("Bạn đã có 3 booking đang chờ thanh toán. Vui lòng hoàn tất hoặc hủy booking cũ trước khi đặt tour mới.");
+  }
+
+  // ✅ CRITICAL FIX 2: Prevent duplicate booking for same tour
+  const existingSameTour = await Booking.findOne({
+    userId: new mongoose.Types.ObjectId(userId),
+    tourId: new mongoose.Types.ObjectId(tourId),
+    paymentStatus: { $in: ['Pending', 'Confirmed'] }
+  });
+  
+  if (existingSameTour) {
+    throw new Error("Bạn đã có booking cho tour này rồi. Vui lòng kiểm tra lại trang 'Tour của tôi'.");
+  }
+
+  // ✅ CRITICAL FIX 3: Check overlapping tour dates
+  const overlappingBookings = await Booking.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    paymentStatus: { $in: ['Pending', 'Confirmed'] },
+    _id: { $ne: null }
+  }).populate('tourId');
+
+  const hasOverlap = overlappingBookings.some(booking => {
+    if (!booking.tourId) return false;
+    
+    const existingStart = new Date(booking.tourId.startDate);
+    const existingEnd = new Date(booking.tourId.endDate);
+    const newStart = new Date(tour.startDate);
+    const newEnd = new Date(tour.endDate);
+    
+    // Check overlap: (StartA <= EndB) AND (EndA >= StartB)
+    const isOverlapping = (newStart <= existingEnd) && (newEnd >= existingStart);
+    
+    if (isOverlapping) {
+      console.log(`⚠️ Overlapping detected with booking ${booking._id}: ${booking.tourName}`);
+    }
+    
+    return isOverlapping;
+  });
+
+  if (hasOverlap) {
+    throw new Error("Bạn đã có booking trong khoảng thời gian này. Vui lòng chọn tour khác hoặc thời gian khác.");
+  }
+
   // Create booking
   const newBooking = new Booking({
     userId: new mongoose.Types.ObjectId(userId),
