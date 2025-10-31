@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState, useContext, useMemo } from "react";
-import "../styles/tour-details.css";
 import "../styles/enhanced-tour-details.css";
 import "../styles/enhanced-reviews.css";
 import "../styles/enhanced-layout.css";
-import "../styles/detailed-reviews.css";
 import "../styles/pricing-summary.css";
 import { Container, Row, Col, Form } from "reactstrap";
 import { useParams } from "react-router-dom";
@@ -80,8 +78,13 @@ const TourDetails = () => {
       const result = await res.json();
       if (!res.ok) return alert(result.message || "Gửi đánh giá thất bại!");
       alert(userReview ? "✅ Cập nhật đánh giá thành công!" : "✅ Gửi đánh giá thành công!");
-      window.location.reload();
+      
+      // Smooth reload: Delay để user đọc message, sau đó reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (err) {
+      console.error("Error submitting review:", err);
       alert("Đã có lỗi xảy ra khi gửi đánh giá.");
     }
   };
@@ -295,12 +298,15 @@ const TourDetails = () => {
                       <h4>Lịch trình tour</h4>
                     </div>
                     <div className="mt-3">
-                      {itinerary?.length > 0 ? itinerary.map((item, i) => (
-                        <div key={i} className="mb-4 itinerary-day">
-                          <h6>Ngày {item.day}: {item.title}</h6>
-                          <p>{item.description}</p>
-                        </div>
-                      )) : <p>Không có lịch trình chi tiết.</p>}
+                      {itinerary && Array.isArray(itinerary) && itinerary.length > 0 ? itinerary.map((item, i) => {
+                        if (!item) return null;
+                        return (
+                          <div key={i} className="mb-4 itinerary-day">
+                            <h6>Ngày {item.day || i + 1}: {item.title || "Chưa có tiêu đề"}</h6>
+                            <p>{item.description || "Chưa có mô tả"}</p>
+                          </div>
+                        );
+                      }) : <p>Không có lịch trình chi tiết.</p>}
                     </div>
                   </div>
 
@@ -350,13 +356,13 @@ const TourDetails = () => {
                       {/* Rating bars */}
                       <div className="rating-breakdown">
                         {[
-                          { label: "TUYỆT VỜI", rating: 5, count: reviews?.filter(r => r.rating === 5).length || 0 },
-                          { label: "Very good", rating: 4, count: reviews?.filter(r => r.rating === 4).length || 0 },
-                          { label: "Good", rating: 3, count: reviews?.filter(r => r.rating === 3).length || 0 },
-                          { label: "Average", rating: 2, count: reviews?.filter(r => r.rating === 2).length || 0 },
-                          { label: "Poor", rating: 1, count: reviews?.filter(r => r.rating === 1).length || 0 }
+                          { label: "TUYỆT VỜI", rating: 5, count: (reviews && Array.isArray(reviews)) ? reviews.filter(r => r?.rating === 5).length : 0 },
+                          { label: "Very good", rating: 4, count: (reviews && Array.isArray(reviews)) ? reviews.filter(r => r?.rating === 4).length : 0 },
+                          { label: "Good", rating: 3, count: (reviews && Array.isArray(reviews)) ? reviews.filter(r => r?.rating === 3).length : 0 },
+                          { label: "Average", rating: 2, count: (reviews && Array.isArray(reviews)) ? reviews.filter(r => r?.rating === 2).length : 0 },
+                          { label: "Poor", rating: 1, count: (reviews && Array.isArray(reviews)) ? reviews.filter(r => r?.rating === 1).length : 0 }
                         ].map((item, index) => {
-                          const percentage = reviews?.length ? (item.count / reviews.length) * 100 : 0;
+                          const percentage = (reviews && Array.isArray(reviews) && reviews.length > 0) ? (item.count / reviews.length) * 100 : 0;
                           return (
                             <div key={index} className="rating-row">
                               <div className="rating-label">{item.label}</div>
@@ -414,40 +420,43 @@ const TourDetails = () => {
                     <div className="mt-4">
                       <h4 className="mb-3">Đánh giá từ khách hàng</h4>
                       
-                      {reviews?.length === 0 && (
+                      {(!reviews || reviews.length === 0) && (
                         <p className="text-muted">Chưa có đánh giá nào cho tour này.</p>
                       )}
                       
-                      {reviews?.map((review, index) => (
-                        <div key={index} className="review-item">
-                          <div className="review-header">
-                            <div className="user-info">
-                              <img src={avatar} alt="avatar" className="user-avatar" />
-                              <div>
-                                <h5 className="review-author">{review.username || "Người dùng"}</h5>
-                                <p className="review-date">Đăng ngày {new Date(review.createdAt).toLocaleDateString("vi-VN", options)}</p>
+                      {reviews && Array.isArray(reviews) && reviews.map((review, index) => {
+                        if (!review) return null;
+                        return (
+                          <div key={index} className="review-item">
+                            <div className="review-header">
+                              <div className="user-info">
+                                <img src={avatar} alt="avatar" className="user-avatar" />
+                                <div>
+                                  <h5 className="review-author">{review.username || "Người dùng"}</h5>
+                                  <p className="review-date">Đăng ngày {new Date(review.createdAt).toLocaleDateString("vi-VN", options)}</p>
+                                </div>
+                              </div>
+                              <div className="review-rating">
+                                <span className="review-rating-text">{review.rating}.0</span>
+                                <div className="d-flex">
+                                  {Array(5).fill(null).map((_, i) => (
+                                    <i 
+                                      key={i} 
+                                      className={i < review.rating ? "ri-star-fill star-icon" : "ri-star-fill empty"}
+                                    ></i>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                            <div className="review-rating">
-                              <span className="review-rating-text">{review.rating}.0</span>
-                              <div className="d-flex">
-                                {Array(5).fill(null).map((_, i) => (
-                                  <i 
-                                    key={i} 
-                                    className={i < review.rating ? "ri-star-fill star-icon" : "ri-star-fill empty"}
-                                  ></i>
-                                ))}
-                              </div>
+                            
+                            <div className="review-content">
+                              {review.reviewText}
                             </div>
+                            
+                            {index < reviews.length - 1 && <div className="divider"></div>}
                           </div>
-                          
-                          <div className="review-content">
-                            {review.reviewText}
-                          </div>
-                          
-                          {index < reviews.length - 1 && <div className="divider"></div>}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

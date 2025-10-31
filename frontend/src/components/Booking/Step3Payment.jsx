@@ -8,9 +8,12 @@ import NotificationManager from "../shared/NotificationManager";
 const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("Cash");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastSubmitTime, setLastSubmitTime] = useState(0); // ✅ CRITICAL FIX: Rate limiting
   const navigate = useNavigate();
 
   const { pricingData, guests, singleRoomCount, fullName, phone, province, district, ward, addressDetail, userId, userEmail } = bookingData;
+  
+  const SUBMIT_COOLDOWN = 3000; // ✅ 3 seconds cooldown between submissions
 
   // Merge pricing data into guests
   const guestsWithPrices = guests.map((guest, index) => {
@@ -36,6 +39,19 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
       return;
     }
 
+    // ✅ CRITICAL FIX: Prevent double-submit with cooldown
+    const now = Date.now();
+    const timeSinceLastSubmit = now - lastSubmitTime;
+    
+    if (timeSinceLastSubmit < SUBMIT_COOLDOWN) {
+      const remainingSeconds = Math.ceil((SUBMIT_COOLDOWN - timeSinceLastSubmit) / 1000);
+      NotificationManager.warning(
+        `Vui lòng đợi ${remainingSeconds} giây trước khi thử lại`
+      );
+      return;
+    }
+
+    setLastSubmitTime(now);
     setIsProcessing(true);
 
     const paymentData = {

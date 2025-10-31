@@ -4,6 +4,7 @@
 :root {
   --primary-color: #ff7e01;
   --secondary-color: #faa935;
+  --secondary-color-rgb: 250, 169, 53;
   --heading-color: #0b2727;
   --text-color: #6e7074;
   --font-name: "Montserrat", sans-serif;

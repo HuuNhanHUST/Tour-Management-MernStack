@@ -11,6 +11,7 @@ import {
   RiMapPinLine,
   RiChat3Line,
   RiBankCardLine,
+  RiFileListLine,
 } from "react-icons/ri";
 
 const AdminLayout = () => {
@@ -100,17 +101,17 @@ const AdminLayout = () => {
           <li className="nav-item">
             <Link
               className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
-              to="/admin/tour-guides"
+              to="/admin/pricing"
             >
-              <RiMapPinLine color="#000" size={20} /> TourGuide Manager
+              <RiBankCardLine color="#000" size={20} /> Quản lý giá
             </Link>
           </li>
           <li className="nav-item">
             <Link
               className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
-              to="/admin/pricing"
+              to="/admin/tour-guides"
             >
-              <RiBankCardLine color="#000" size={20} /> Quản lý giá
+              <RiMapPinLine color="#000" size={20} /> TourGuide Manager
             </Link>
           </li>
           <li className="nav-item">
@@ -137,6 +138,14 @@ const AdminLayout = () => {
               <RiBankCardLine color="#000" size={20} /> Payment Manager
             </Link>
           </li>
+          <li className="nav-item">
+            <Link
+              className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
+              to="/admin/bookings"
+            >
+              <RiFileListLine color="#000" size={20} /> Quản lý Booking
+            </Link>
+          </li>
         </ul>
         <hr className="my-2" />
 
@@ -148,19 +157,6 @@ const AdminLayout = () => {
     </div>
   </div>
       </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       {/* Right content */}
       <div className="flex-grow-1 d-flex flex-column">
