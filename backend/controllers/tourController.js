@@ -1,4 +1,5 @@
 import Tour from '../models/Tour.js';
+import TourGuide from '../models/TourGuide.js'; // ✅ Thêm model TourGuide
 
 // ✅ Hàm hỗ trợ parse JSON từ FormData
 const parseJSONFields = (body) => {
@@ -15,7 +16,72 @@ const parseJSONFields = (body) => {
   });
 };
 
-// ✅ Tạo mới Tour
+// // ✅ Tạo mới Tour
+// export const createTour = async (req, res) => {
+//   try {
+//     parseJSONFields(req.body);
+
+//     const {
+//       title,
+//       city,
+//       address,
+//       distance,
+//       desc,
+//       price,
+//       maxGroupSize,
+//       minGroupSize,
+//       featured,
+//       startDate,
+//       endDate,
+//       transportation,
+//       hotelInfo,
+//       activities,
+//       mealsIncluded,
+//       itinerary,
+//       tourGuide,
+//     } = req.body;
+
+//     const photo = req.files?.photo?.[0]?.path || "";
+//     const photos = req.files?.photos?.map(file => file.path) || [];
+
+//     const newTour = new Tour({
+//       title,
+//       city,
+//       address,
+//       distance: Number(distance),
+//       desc,
+//       price: Number(price),
+//       maxGroupSize: Number(maxGroupSize),
+//       minGroupSize: Number(minGroupSize),
+//       featured: featured === "true" || featured === true,
+//       startDate: new Date(startDate),
+//       endDate: new Date(endDate),
+//       photo,
+//       photos,
+//       transportation,
+//       hotelInfo,
+//       activities,
+//       mealsIncluded,
+//       itinerary,
+//       tourGuide,
+//     });
+
+//     const savedTour = await newTour.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Đã Tạo Thành Công",
+//       data: savedTour,
+//     });
+//   } catch (err) {
+//     console.error("❌ Lỗi khi tạo tour:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: "Tạo Thất Bại. Hãy thử lại",
+//     });
+//   }
+// };
+
 export const createTour = async (req, res) => {
   try {
     parseJSONFields(req.body);
@@ -37,6 +103,7 @@ export const createTour = async (req, res) => {
       activities,
       mealsIncluded,
       itinerary,
+      tourGuide,
     } = req.body;
 
     const photo = req.files?.photo?.[0]?.path || "";
@@ -48,7 +115,7 @@ export const createTour = async (req, res) => {
       address,
       distance: Number(distance),
       desc,
-      price: Number(price),
+      price: parseFloat(price), // Sử dụng parseFloat để chuyển đổi giá thành số
       maxGroupSize: Number(maxGroupSize),
       minGroupSize: Number(minGroupSize),
       featured: featured === "true" || featured === true,
@@ -60,22 +127,52 @@ export const createTour = async (req, res) => {
       hotelInfo,
       activities,
       mealsIncluded,
-      itinerary
+      itinerary,
+      tourGuide,
     });
 
-    const savedTour = await newTour.save();
+    await newTour.save();
+
+    // Thêm tham chiếu đến tourGuide
+    // ✅ FIX: Đảm bảo tourGuide là một ID hợp lệ trước khi cập nhật
+    // req.body.tourGuide thường là một chuỗi ID từ frontend
+    const tourGuideId = typeof tourGuide === 'object' && tourGuide !== null ? tourGuide._id : tourGuide;
+    if (tourGuideId) {
+      await TourGuide.findByIdAndUpdate(tourGuideId, { $addToSet: { tours: newTour._id } });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Tạo tour mới thành công",
+      data: newTour,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Không thể tạo tour mới",
+      error: err.message,
+    });
+  }
+};
+
+// ✅ Lấy dữ liệu cần thiết cho trang tạo/cập nhật tour (bao gồm danh sách hướng dẫn viên)
+export const getTourCreationData = async (req, res) => {
+  try {
+    // Lấy tất cả hướng dẫn viên, chỉ chọn lọc các trường cần thiết
+    const tourGuides = await TourGuide.find({}).select('name photo languages');
+
+    // Trong tương lai, bạn có thể thêm các dữ liệu khác ở đây
+    // const categories = await Category.find({});
 
     res.status(200).json({
       success: true,
-      message: "Đã Tạo Thành Công",
-      data: savedTour,
+      message: "Lấy dữ liệu tạo tour thành công",
+      data: {
+        tourGuides,
+      },
     });
   } catch (err) {
-    console.error("❌ Lỗi khi tạo tour:", err);
-    res.status(500).json({
-      success: false,
-      message: "Tạo Thất Bại. Hãy thử lại",
-    });
+    res.status(500).json({ success: false, message: "Không thể lấy dữ liệu tạo tour" });
   }
 };
 
@@ -104,7 +201,8 @@ export const updateTour = async (req, res) => {
       hotelInfo,
       activities,
       mealsIncluded,
-      itinerary
+      itinerary,
+      tourGuide,
     } = req.body;
 
     const photo = req.files?.photo?.[0]?.path || oldPhoto;
@@ -130,7 +228,8 @@ export const updateTour = async (req, res) => {
       hotelInfo,
       activities,
       mealsIncluded,
-      itinerary
+      itinerary,
+      tourGuide,
     };
 
     const updatedTour = await Tour.findByIdAndUpdate(
@@ -165,7 +264,10 @@ export const deleteTour = async (req, res) => {
 export const getSingleTour = async (req, res) => {
   const id = req.params.id;
   try {
-    const tour = await Tour.findById(id).populate('reviews');
+    const tour = await Tour.findById(id)
+      .populate('reviews')
+      .populate('tourGuide');
+
     if (!tour) {
       return res.status(404).json({ success: false, message: "Không tìm thấy tour" });
     }
@@ -222,6 +324,7 @@ export const getAllTour = async (req, res) => {
   try {
     const tours = await Tour.find({})
       .populate('reviews')
+      .populate('tourGuide') // Thêm populate cho tourGuide
       .skip(page * limit)
       .limit(limit);
 
@@ -250,7 +353,7 @@ export const getTourBySearch = async (req, res) => {
       city,
       distance: { $gte: distance },
       maxGroupSize: { $gte: maxGroupSize }
-    }).populate("reviews");
+    }).populate("reviews").populate("tourGuide");
 
     res.status(200).json({
       success: true,
@@ -270,6 +373,7 @@ export const getFeaturedTours = async (req, res) => {
   try {
     const tours = await Tour.find({ featured: true })
       .populate("reviews")
+      .populate("tourGuide")
       .limit(8);
 
     res.status(200).json({

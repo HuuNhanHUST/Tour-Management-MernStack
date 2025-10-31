@@ -100,6 +100,14 @@ const AdminLayout = () => {
           <li className="nav-item">
             <Link
               className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
+              to="/admin/tour-guides"
+            >
+              <RiMapPinLine color="#000" size={20} /> TourGuide Manager
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
               to="/admin/pricing"
             >
               <RiBankCardLine color="#000" size={20} /> Quản lý giá
@@ -148,7 +156,12 @@ const AdminLayout = () => {
 
 
 
-        
+
+
+
+
+
+
       {/* Right content */}
       <div className="flex-grow-1 d-flex flex-column">
         {/* Top bar */}

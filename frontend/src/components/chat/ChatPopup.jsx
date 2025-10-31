@@ -30,7 +30,7 @@ const ChatPopup = () => {
   };
 
   useEffect(() => {
-    if (!open || !user) return;
+    if (!open || !chatRoomId) return;
 
     const fetchMessages = async () => {
       try {
@@ -42,7 +42,7 @@ const ChatPopup = () => {
     };
 
     fetchMessages();
-  }, [open, user, chatRoomId]);
+  }, [open, chatRoomId]);
 
   const handleReceiveMessage = useCallback(
     (msg) => {
@@ -57,10 +57,10 @@ const ChatPopup = () => {
     },
     [chatRoomId, open, user?._id]
   );
-
+  
   useEffect(() => {
-    if (!socket || !user) return;
-
+    if (!socket || !chatRoomId) return;
+    
     socket.emit("joinRoom", chatRoomId);
     socket.on("receiveMessage", handleReceiveMessage);
 
@@ -90,13 +90,13 @@ const ChatPopup = () => {
       socket.off("userStoppedTyping");
       socket.off("userStatusUpdate");
     };
-  }, [socket, user, chatRoomId, handleReceiveMessage]);
-
+  }, [socket, chatRoomId, handleReceiveMessage]);
+  
   const handleSend = async () => {
     if (!message.trim()) return;
 
     const newMsg = {
-      chatRoomId,
+      chatRoomId: chatRoomId, // Ensure chatRoomId is passed
       text: message,
     };
 
@@ -159,6 +159,7 @@ const ChatPopup = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat]);
 
+  // ✅ CORRECT FIX: Check for user *after* all hooks have been called.
   if (!user) return null;
 
   return (

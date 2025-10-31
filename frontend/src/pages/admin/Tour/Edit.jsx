@@ -25,7 +25,10 @@ const EditTour = () => {
     activities: [],
     mealsIncluded: [],
     itinerary: [],
+    tourGuide: null,
   });
+
+  const [tourGuides, setTourGuides] = useState([]);
 
   // Inputs tạm cho thêm mới
   const [activityInput, setActivityInput] = useState("");
@@ -48,6 +51,7 @@ const EditTour = () => {
   const [previewPhotos, setPreviewPhotos] = useState([]);
 
   useEffect(() => {
+    // Fetch tour details
     axios
       .get(`http://localhost:4000/api/v1/tour/${id}`)
       .then((res) => {
@@ -61,6 +65,16 @@ const EditTour = () => {
       .catch(() => {
         alert("Không tìm thấy tour cần sửa.");
         navigate("/admin/tours");
+      });
+
+    // Fetch tour guides
+    axios
+      .get(`http://localhost:4000/api/v1/tour-guides`)
+      .then((res) => {
+        setTourGuides(res.data.data || []);
+      })
+      .catch(() => {
+        alert("Lỗi khi tải danh sách hướng dẫn viên.");
       });
   }, [id, navigate]);
 
@@ -336,6 +350,24 @@ const EditTour = () => {
           >
             <option value="false">Không</option>
             <option value="true">Có</option>
+          </select>
+        </div>
+
+        {/* Hướng dẫn viên */}
+        <div className="col-md-6">
+          <label className="form-label">Hướng dẫn viên</label>
+          <select
+            className="form-select"
+            name="tourGuide"
+            value={tour.tourGuide?._id || tour.tourGuide || ""}
+            onChange={(e) => setTour({ ...tour, tourGuide: e.target.value || null })}
+          >
+            <option value="">-- Chọn hướng dẫn viên --</option>
+            {tourGuides.map((guide) => (
+              <option key={guide._id} value={guide._id}>
+                {guide.name}
+              </option>
+            ))}
           </select>
         </div>
 
