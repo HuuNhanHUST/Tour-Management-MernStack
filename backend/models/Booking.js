@@ -187,6 +187,19 @@ bookingSchema.index(
   }
 );
 
+// ✅ Pre-save hook để tự động tạo mã booking
+bookingSchema.pre('save', async function(next) {
+  if (!this.confirmationNumber) {
+    // Format: TOUR-YYYYMMDD-XXXXX
+    // VD: TOUR-20251031-A1B2C
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+    this.confirmationNumber = `TOUR-${dateStr}-${randomStr}`;
+  }
+  next();
+});
+
 export default mongoose.model("Booking", bookingSchema);
 
 //Design by DuongTuanKiet
