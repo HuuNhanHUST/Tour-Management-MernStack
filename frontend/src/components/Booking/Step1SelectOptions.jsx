@@ -164,7 +164,10 @@ const Step1SelectOptions = ({ tour, bookingData, updateBookingData, nextStep }) 
 
       {/* Tour Date Info */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Thời gian tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-calendar-line section-icon"></i>
+          <h6 className="fw-bold">Thời gian tour</h6>
+        </div>
         <div className="tour-date-info p-3 bg-light rounded">
           <div className="d-flex justify-content-between mb-2">
             <span>Ngày đi:</span>
@@ -179,7 +182,10 @@ const Step1SelectOptions = ({ tour, bookingData, updateBookingData, nextStep }) 
 
       {/* Guest Selection */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Thông tin khách đi tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-group-line section-icon"></i>
+          <h6 className="fw-bold">Thông tin khách đi tour</h6>
+        </div>
 
         {localGuests.map((guest, index) => (
           <div key={index} className="guest-info border p-3 mb-3 rounded">
@@ -264,7 +270,10 @@ const Step1SelectOptions = ({ tour, bookingData, updateBookingData, nextStep }) 
 
       {/* Price Preview */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Ước tính giá</h6>
+        <div className="booking-section-header">
+          <i className="ri-money-dollar-circle-line section-icon"></i>
+          <h6 className="fw-bold">Ước tính giá</h6>
+        </div>
         {isCalculatingPrice ? (
           <div className="text-center py-3">
             <div className="spinner-border text-primary" role="status">

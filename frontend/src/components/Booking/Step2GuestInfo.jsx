@@ -93,7 +93,10 @@ const Step2GuestInfo = ({ tour, bookingData, updateBookingData, nextStep, prevSt
 
       {/* Contact Info */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Thông tin người đặt tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-user-line section-icon"></i>
+          <h6 className="fw-bold">Thông tin người đặt tour</h6>
+        </div>
         <FormGroup>
           <label htmlFor="fullName">Họ và tên <span className="text-danger">*</span></label>
           <input
@@ -123,7 +126,10 @@ const Step2GuestInfo = ({ tour, bookingData, updateBookingData, nextStep, prevSt
 
       {/* Guest Details */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Chi tiết thông tin khách đi tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-team-line section-icon"></i>
+          <h6 className="fw-bold">Chi tiết thông tin khách đi tour</h6>
+        </div>
         <p className="text-muted mb-3">
           <i className="ri-information-line"></i> Tuổi và loại khách đã được chọn ở bước trước
         </p>
@@ -159,7 +165,10 @@ const Step2GuestInfo = ({ tour, bookingData, updateBookingData, nextStep, prevSt
 
       {/* Pickup Address */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Địa chỉ đón khách</h6>
+        <div className="booking-section-header">
+          <i className="ri-map-pin-line section-icon"></i>
+          <h6 className="fw-bold">Địa chỉ đón khách</h6>
+        </div>
         <FormGroup>
           <label>Tỉnh/Thành, Quận/Huyện, Phường/Xã <span className="text-danger">*</span></label>
           <LocationSelect onChange={handleLocationChange} />
@@ -182,7 +191,10 @@ const Step2GuestInfo = ({ tour, bookingData, updateBookingData, nextStep, prevSt
 
       {/* Summary */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Tóm tắt đặt tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-file-list-3-line section-icon"></i>
+          <h6 className="fw-bold">Tóm tắt đặt tour</h6>
+        </div>
         <div className="summary-card p-3 bg-light rounded">
           <div className="d-flex justify-content-between mb-2">
             <span>Tour:</span>
