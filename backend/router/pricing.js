@@ -11,7 +11,10 @@ import {
 } from '../controllers/pricingController.js';
 
 const router = express.Router();
-
+///git commit -m "SCRUM-23: Xác nhận hệ thống áp dụng giá mặc định thành công"
+//git commit -m "SCRUM-23: Xác nhận hệ thống áp dụng giá mặc định thành công"
+//git commit -m "SCRUM-23: Xác nhận hệ thống áp dụng giá mặc định thành công"
+//git commit -m "SCRUM-23: Xác nhận hệ thống áp dụng giá mặc định thành công"
 // Calculate price based on pricing rules (accessible to all authenticated users)
 router.post('/calculate', verifyToken, calculatePrice);
 

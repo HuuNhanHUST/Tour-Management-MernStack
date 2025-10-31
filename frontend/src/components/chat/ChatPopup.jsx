@@ -12,10 +12,12 @@ const ChatPopup = () => {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [adminOnline, setAdminOnline] = useState(false);
 
   const bottomRef = useRef(null);
-  // ✅ FIX: Only define chatRoomId if user exists
-  const chatRoomId = user ? user._id : null;
+  const typingTimeoutRef = useRef(null);
+  const chatRoomId = user?._id;
 
   const formatTime = (isoString) => {
     const date = new Date(isoString);
@@ -47,7 +49,7 @@ const ChatPopup = () => {
       if (msg.chatRoomId === chatRoomId) {
         // ✅ FIX: Skip own messages to prevent duplicates
         // Own messages are already added via API response
-        if (user && String(msg.senderId) !== String(user._id)) {
+        if (String(msg.senderId) !== String(user?._id)) {
           setChat((prev) => [...prev, msg]);
         }
         if (!open) setHasNewMessage(true);
@@ -62,8 +64,31 @@ const ChatPopup = () => {
     socket.emit("joinRoom", chatRoomId);
     socket.on("receiveMessage", handleReceiveMessage);
 
+    // Listen for typing indicators
+    socket.on("userTyping", ({ userId }) => {
+      // Check if typing user is admin (not current user)
+      if (userId !== user._id) {
+        setIsTyping(true);
+      }
+    });
+
+    socket.on("userStoppedTyping", ({ userId }) => {
+      if (userId !== user._id) {
+        setIsTyping(false);
+      }
+    });
+
+    // Listen for admin online status
+    socket.on("userStatusUpdate", ({ userId, isOnline }) => {
+      // Check if admin is online (you can add admin ID check here)
+      setAdminOnline(isOnline);
+    });
+
     return () => {
       socket.off("receiveMessage", handleReceiveMessage);
+      socket.off("userTyping");
+      socket.off("userStoppedTyping");
+      socket.off("userStatusUpdate");
     };
   }, [socket, chatRoomId, handleReceiveMessage]);
   
@@ -92,8 +117,38 @@ const ChatPopup = () => {
     }
   };
 
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
+
+    // Emit typing event
+    if (socket && e.target.value.trim()) {
+      socket.emit("typing", { 
+        chatRoomId, 
+        userId: user._id, 
+        username: user.username 
+      });
+
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("stopTyping", { chatRoomId, userId: user._id });
+      }, 2000);
+    }
+  };
+
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") handleSend();
+    if (e.key === "Enter") {
+      handleSend();
+      // Stop typing indicator when message sent
+      if (socket && typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        socket.emit("stopTyping", { chatRoomId, userId: user._id });
+      }
+    }
   };
 
   useEffect(() => {
@@ -111,15 +166,28 @@ const ChatPopup = () => {
     <div className="chat-popup-wrapper">
       {open ? (
         <div className="chat-box shadow">
-          <div className="chat-header bg-primary text-white d-flex justify-content-between align-items-center p-2">
-            <span>💬 Hỗ trợ trực tuyến</span>
+          <div className="chat-header text-white d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center gap-2">
+              <span style={{ fontSize: "1.1rem", fontWeight: 600 }}>💬 Hỗ trợ trực tuyến</span>
+              {adminOnline && (
+                <span style={{ 
+                  display: "inline-block", 
+                  width: "8px", 
+                  height: "8px", 
+                  borderRadius: "50%", 
+                  background: "#4ade80",
+                  boxShadow: "0 0 8px #4ade80",
+                  animation: "pulse 2s infinite"
+                }} title="Admin đang online"></span>
+              )}
+            </div>
             <button className="btn btn-sm btn-light" onClick={() => setOpen(false)}>✖
             </button>
           </div>
 
           <div className="chat-body">
             {chat.map((msg, idx) => {
-              const isMe = String(msg.senderId) === String(user._id);
+              const isMe = String(msg.senderId) === String(user?._id);
               const isAdmin = msg.senderRole === "admin";
 
               return (
@@ -134,6 +202,16 @@ const ChatPopup = () => {
                 </div>
               );
             })}
+            
+            {/* Typing indicator */}
+            {isTyping && (
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+            
             <div ref={bottomRef}></div>
           </div>
 
@@ -143,18 +221,18 @@ const ChatPopup = () => {
               className="form-control"
               placeholder="Nhập tin nhắn..."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleTyping}
               onKeyDown={handleKeyPress}
             />
             <button className="btn btn-primary" onClick={handleSend}>
-              Gửi
+              <i className="ri-send-plane-fill"></i>
             </button>
           </div>
         </div>
       ) : (
-        <button className="btn btn-primary chat-toggle-btn" onClick={() => setOpen(true)}>
-          💬 Chat
-          {hasNewMessage && <span className="chat-badge">●</span>}
+        <button className="chat-toggle-btn" onClick={() => setOpen(true)}>
+          💬
+          {hasNewMessage && <span className="chat-badge">!</span>}
         </button>
       )}
     </div>

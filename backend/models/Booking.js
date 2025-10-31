@@ -128,3 +128,5 @@ bookingSchema.set('toJSON', { virtuals: true });
 bookingSchema.set('toObject', { virtuals: true });
 
 export default mongoose.model("Booking", bookingSchema);
+
+//Design by DuongTuanKiet

@@ -1,3 +1,3 @@
 # Tour-Management-MernStack 
 
-# ket noi jira
+# git commit -m "SCRUM-31: Hoàn thành giao diện chi tiết tour cho người dùng"

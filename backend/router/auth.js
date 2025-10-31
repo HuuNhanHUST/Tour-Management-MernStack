@@ -13,6 +13,8 @@ router.post("/register", register);
 router.post("/login", login);
 
 // 👉 Lấy thông tin người dùng từ token (cookie)
+//git commit -m "SCRUM-13: Hoàn thành kiểm thử chức năng đăng nhập"
+//git commit -m "SCRUM-13: Hoàn thành kiểm thử chức năng đăng nhập"
 router.get("/me", verifyToken, (req, res) => {
   res.status(200).json({
     success: true,

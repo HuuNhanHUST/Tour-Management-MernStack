@@ -1,0 +1,242 @@
+.booking-details-section {
+  padding: 60px 0;
+  min-height: 70vh;
+  background-color: #f8f9fa;
+}
+
+.booking-details-section h2 {
+  color: #333;
+  font-weight: 700;
+}
+
+.booking-details-section h2 i {
+  margin-right: 10px;
+  color: var(--secondary-color);
+}
+
+.booking-details-section h4 {
+  color: #333;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.booking-details-section h4 i {
+  margin-right: 8px;
+}
+
+/* Cards */
+.booking-details-section .card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.booking-details-section .card-body {
+  padding: 1.5rem;
+}
+
+/* Info Items */
+.info-item label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.info-item p {
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Table */
+.table-responsive {
+  margin: 0 -1.5rem;
+  padding: 0 1.5rem;
+}
+
+.booking-details-section table {
+  margin-bottom: 0;
+}
+
+.booking-details-section table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.booking-details-section table td {
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+/* Payment Summary */
+.payment-summary {
+  font-size: 0.95rem;
+}
+
+.payment-summary .text-muted {
+  color: #6c757d !important;
+}
+
+.payment-method-section {
+  border-left: 4px solid var(--secondary-color);
+}
+
+/* Sticky Sidebar */
+.sticky-top {
+  position: sticky;
+  z-index: 10;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  padding: 1rem 0;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-content small {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-content p {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Buttons */
+.booking-details-section .btn {
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.booking-details-section .btn i {
+  margin-right: 5px;
+}
+
+/* Info Group */
+.info-group {
+  line-height: 1.8;
+}
+
+.info-group p i {
+  color: var(--secondary-color);
+  margin-right: 5px;
+}
+
+/* Print Styles */
+@media print {
+  .booking-details-section {
+    background: white;
+  }
+
+  .btn,
+  .timeline,
+  .sticky-top .btn {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+  }
+
+  .sticky-top {
+    position: static !important;
+  }
+}
+
+/* Responsive */
+@media only screen and (max-width: 992px) {
+  .sticky-top {
+    position: static !important;
+  }
+
+  .booking-details-section {
+    padding: 40px 0;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .booking-details-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .booking-details-section .card-body {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+
+  .booking-details-section table {
+    font-size: 0.85rem;
+  }
+
+  .booking-details-section table th,
+  .booking-details-section table td {
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+@media only screen and (max-width: 576px) {
+  .booking-details-section {
+    padding: 30px 0;
+  }
+
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .payment-method-section {
+    padding: 0.75rem !important;
+  }
+
+  .info-item {
+    margin-bottom: 1rem !important;
+  }
+}
