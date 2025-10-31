@@ -11,6 +11,7 @@ import {
   RiMapPinLine,
   RiChat3Line,
   RiBankCardLine,
+  RiFileListLine,
 } from "react-icons/ri";
 
 const AdminLayout = () => {
@@ -95,6 +96,14 @@ const AdminLayout = () => {
               to="/admin/tours"
             >
               <RiMapPinLine color="#000" size={20} /> Tour Manager
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              className="nav-link text-black px-3 py-2 rounded d-flex align-items-center gap-2"
+              to="/admin/bookings"
+            >
+              <RiFileListLine color="#000" size={20} /> Quản lý Booking
             </Link>
           </li>
           <li className="nav-item">

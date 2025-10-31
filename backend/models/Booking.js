@@ -95,6 +95,17 @@ const bookingSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    // Cancellation tracking
+    cancellationReason: {
+      type: String
+    },
+    cancelledAt: {
+      type: Date
+    },
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
 province: {
   code: { type: String, required: true },
   name: { type: String, required: true },

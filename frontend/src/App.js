@@ -16,6 +16,8 @@ import AdminChatPanel from "./pages/admin/Chat/AdminChatPanel";
 import PaymentList from "./pages/admin/PaymentList";
 import LoginHistory from "./pages/admin/LoginHistory";
 import PricingManager from "./pages/admin/Pricing/PricingManager";
+import BookingList from "./pages/admin/Booking/List";
+import BookingDetails from "./pages/admin/Booking/Details";
 
 function App() {
   const { user,loading } = useContext(AuthContext);
@@ -46,6 +48,8 @@ function App() {
           <Route path="payments" element={<PaymentList />} />
           <Route path="pricing" element={<PricingManager />} />
           <Route path="/admin/login-history" element={<LoginHistory />} />
+          <Route path="bookings" element={<BookingList />} />
+          <Route path="bookings/:id" element={<BookingDetails />} />
 
         </Route>
       ) : (
