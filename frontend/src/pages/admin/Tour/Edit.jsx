@@ -69,9 +69,11 @@ const EditTour = () => {
 
     // Fetch tour guides
     axios
-      .get(`http://localhost:4000/api/v1/tour-guides`)
+      .get(`http://localhost:4000/api/v1/tour/creation-data`, {
+        withCredentials: true,
+      })
       .then((res) => {
-        setTourGuides(res.data.data || []);
+        setTourGuides(res.data.data.tourGuides || []);
       })
       .catch(() => {
         alert("Lỗi khi tải danh sách hướng dẫn viên.");
@@ -378,6 +380,19 @@ const EditTour = () => {
           {previewUrl && (
             <img src={previewUrl} alt="Ảnh chính" className="img-thumbnail mt-2" style={{ width: "200px" }} />
           )}
+        </div>
+
+        {/* Mô tả */}
+        <div className="col-12">
+          <label className="form-label">Mô tả</label>
+          <textarea
+            className="form-control"
+            name="desc"
+            rows="3"
+            value={tour.desc}
+            onChange={handleChange}
+            required
+          ></textarea>
         </div>
 
         {/* Ảnh phụ cũ */}
