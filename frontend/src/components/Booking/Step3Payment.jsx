@@ -119,7 +119,10 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
 
       {/* Booking Summary */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Thông tin đặt tour</h6>
+        <div className="booking-section-header">
+          <i className="ri-information-line section-icon"></i>
+          <h6 className="fw-bold">Thông tin đặt tour</h6>
+        </div>
         <div className="summary-detail-card border rounded p-3">
           <div className="mb-3">
             <strong>Tour:</strong> {tour.title}
@@ -142,7 +145,10 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
 
       {/* Guest List */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Danh sách khách</h6>
+        <div className="booking-section-header">
+          <i className="ri-team-line section-icon"></i>
+          <h6 className="fw-bold">Danh sách khách</h6>
+        </div>
         <ListGroup>
           {guestsWithPrices.map((guest, index) => (
             <ListGroupItem key={index} className="d-flex justify-content-between align-items-center">
@@ -166,7 +172,10 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
 
       {/* Price Breakdown */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Chi tiết giá</h6>
+        <div className="booking-section-header">
+          <i className="ri-money-dollar-circle-line section-icon"></i>
+          <h6 className="fw-bold">Chi tiết giá</h6>
+        </div>
         <div className="price-breakdown p-3 border rounded">
           <div className="d-flex justify-content-between mb-2">
             <span>Giá cơ bản:</span>
@@ -215,7 +224,10 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
 
       {/* Payment Method Selection */}
       <div className="booking-section mb-4">
-        <h6 className="fw-bold mb-3">Chọn phương thức thanh toán</h6>
+        <div className="booking-section-header">
+          <i className="ri-bank-card-line section-icon"></i>
+          <h6 className="fw-bold">Chọn phương thức thanh toán</h6>
+        </div>
         <div className="payment-methods">
           <div
             className={`payment-method-card border rounded p-3 mb-3 cursor-pointer ${selectedPaymentMethod === 'Cash' ? 'selected' : ''}`}
