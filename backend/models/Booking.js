@@ -138,6 +138,35 @@ bookingSchema.virtual('payment', {
 bookingSchema.set('toJSON', { virtuals: true });
 bookingSchema.set('toObject', { virtuals: true });
 
+// ✅ CRITICAL FIX: Add indexes for performance optimization
+// Index for user's booking history (My Bookings page)
+bookingSchema.index({ userId: 1, createdAt: -1 });
+
+// Index for tour booking queries (Tour availability)
+bookingSchema.index({ tourId: 1, paymentStatus: 1 });
+
+// Index for admin filtering and cleanup jobs
+bookingSchema.index({ paymentStatus: 1, createdAt: 1 });
+
+// Compound index for cleanup job (MoMo pending bookings)
+bookingSchema.index({ paymentMethod: 1, paymentStatus: 1, createdAt: 1 });
+
+// Index for warning email job
+bookingSchema.index({ createdAt: 1, warningEmailSent: 1 });
+
+// ✅ CRITICAL FIX: Prevent duplicate bookings for same tour
+// Unique constraint: User can only have ONE active booking per tour
+bookingSchema.index(
+  { userId: 1, tourId: 1 },
+  { 
+    unique: true,
+    partialFilterExpression: { 
+      paymentStatus: { $in: ['Pending', 'Confirmed'] }
+    },
+    name: 'unique_user_tour_active_booking'
+  }
+);
+
 export default mongoose.model("Booking", bookingSchema);
 
 //Design by DuongTuanKiet

@@ -96,26 +96,43 @@ export const updateBookingPaymentStatus = async (bookingId, paymentStatus, sessi
   return booking;
 };
 
-// ✅ FIXED: Update tour slots with session support
+// ✅ CRITICAL FIX: Update tour slots with ATOMIC operation to prevent race condition
 export const updateTourSlots = async (tourId, guestSize, session = null) => {
+  // Get tour first to check maxGroupSize
   const tour = await Tour.findById(tourId).session(session);
   if (!tour) {
     throw new Error("Tour không tồn tại");
   }
 
-  const oldBookings = tour.currentBookings;
-  tour.currentBookings += guestSize;
+  // ✅ ATOMIC UPDATE: Use findOneAndUpdate with condition
+  // This prevents race condition where 2 requests can both check and pass validation
+  const updatedTour = await Tour.findOneAndUpdate(
+    {
+      _id: tourId,
+      // ✅ Check slots availability in the same atomic operation
+      $expr: { 
+        $lte: [
+          { $add: ['$currentBookings', guestSize] },
+          '$maxGroupSize'
+        ]
+      }
+    },
+    {
+      $inc: { currentBookings: guestSize }
+    },
+    { 
+      session,
+      new: true
+    }
+  );
   
-  // Save with session if provided (for transaction support)
-  if (session) {
-    await tour.save({ session });
-  } else {
-    await tour.save();
+  if (!updatedTour) {
+    throw new Error(`Tour đã hết chỗ hoặc không đủ ${guestSize} slot. Vui lòng thử lại.`);
   }
   
-  console.log(`✅ [BookingController] Tour ${tourId} slots updated: ${oldBookings} → ${tour.currentBookings}${session ? ' (in transaction)' : ''}`);
+  console.log(`✅ [BookingController] Tour ${tourId} slots updated atomically: ${tour.currentBookings} → ${updatedTour.currentBookings}${session ? ' (in transaction)' : ''}`);
 
-  return tour;
+  return updatedTour;
 };
 
 // ✅ FIXED: Rollback tour slots with session support
@@ -242,12 +259,73 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // ✅ CRITICAL FIX 1: Limit concurrent Pending bookings per user
+    const userId = req.user.id;
+    const pendingCount = await Booking.countDocuments({
+      userId,
+      paymentStatus: 'Pending'
+    });
+    
+    if (pendingCount >= 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã có 3 booking đang chờ thanh toán. Vui lòng hoàn tất hoặc hủy booking cũ trước khi đặt tour mới."
+      });
+    }
+
     // 🔍 Tìm tour theo ID
     const tour = await Tour.findById(tourId);
     if (!tour) {
       return res.status(404).json({
         success: false,
         message: "Tour không tồn tại."
+      });
+    }
+
+    // ✅ CRITICAL FIX 2: Prevent duplicate booking for same tour
+    const existingSameTour = await Booking.findOne({
+      userId,
+      tourId,
+      paymentStatus: { $in: ['Pending', 'Confirmed'] }
+    });
+    
+    if (existingSameTour) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã có booking cho tour này rồi. Vui lòng kiểm tra lại trang 'Tour của tôi'.",
+        existingBookingId: existingSameTour._id
+      });
+    }
+
+    // ✅ CRITICAL FIX 3: Check overlapping tour dates
+    const overlappingBookings = await Booking.find({
+      userId,
+      paymentStatus: { $in: ['Pending', 'Confirmed'] },
+      _id: { $ne: null }
+    }).populate('tourId');
+
+    const hasOverlap = overlappingBookings.some(booking => {
+      if (!booking.tourId) return false;
+      
+      const existingStart = new Date(booking.tourId.startDate);
+      const existingEnd = new Date(booking.tourId.endDate);
+      const newStart = new Date(tour.startDate);
+      const newEnd = new Date(tour.endDate);
+      
+      // Check overlap: (StartA <= EndB) AND (EndA >= StartB)
+      const isOverlapping = (newStart <= existingEnd) && (newEnd >= existingStart);
+      
+      if (isOverlapping) {
+        console.log(`⚠️ Overlapping detected with booking ${booking._id}: ${booking.tourName}`);
+      }
+      
+      return isOverlapping;
+    });
+
+    if (hasOverlap) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã có booking trong khoảng thời gian này. Vui lòng chọn tour khác hoặc thời gian khác."
       });
     }
 
@@ -260,27 +338,9 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    // ✅ Kiểm tra số chỗ còn lại
-    const remaining = tour.maxGroupSize - tour.currentBookings;
-    console.log(`📊 Tour slots: total=${tour.maxGroupSize}, booked=${tour.currentBookings}, remaining=${remaining}`);
-    
-    if (remaining <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Tour đã hết chỗ hoặc chỉ còn lại 0 chỗ do đang chờ thanh toán.`
-      });
-    }
-    
-    if (guestSize > remaining) {
-      return res.status(400).json({
-        success: false,
-        message: `Chỉ còn lại ${remaining} chỗ trống.`
-      });
-    }
-
-    // ✅ Tăng số người đã đặt và lưu tour
-    tour.currentBookings += guestSize;
-    await tour.save();
+    // ✅ CRITICAL FIX 4: Use atomic update for tour slots (prevent race condition)
+    // Remove manual check and update - will be done atomically by updateTourSlots
+    console.log(`📊 Tour slots before booking: total=${tour.maxGroupSize}, booked=${tour.currentBookings}, requesting=${guestSize}`);
 
     // Use our validated basePrice or fallback to tour price
     if (!validBasePrice) {
@@ -330,31 +390,41 @@ export const createBooking = async (req, res) => {
       guests: validatedGuests.map(g => ({ age: g.age, price: g.price }))
     });
     
-    // ✅ Tạo booking với đầy đủ thông tin đã được validate
-    const newBooking = new Booking({
-      userId: req.user.id,
-      userEmail: req.user.email,
-      tourId,
-      tourName,
-      fullName,
-      phone,
-      guestSize,
-      guests: validatedGuests,
-      singleRoomCount,
-      basePrice: validBasePrice,
-      totalAmount: Number(totalAmount) || validBasePrice * guestSize,
-      appliedDiscounts: appliedDiscounts || [],
-      appliedSurcharges: appliedSurcharges || [],
-      paymentMethod,
-      bookAt: bookAt || new Date(),
-      province,
-      district,
-      ward,
-      addressDetail,
-    });
-
+    // ✅ CRITICAL FIX 5: Use transaction for atomicity
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
     try {
-      const savedBooking = await newBooking.save();
+      // ✅ ATOMIC: Update tour slots with race condition prevention
+      await updateTourSlots(tourId, guestSize, session);
+      
+      // ✅ Create booking with validated data
+      const newBooking = new Booking({
+        userId: req.user.id,
+        userEmail: req.user.email,
+        tourId,
+        tourName,
+        fullName,
+        phone,
+        guestSize,
+        guests: validatedGuests,
+        singleRoomCount,
+        basePrice: validBasePrice,
+        totalAmount: Number(totalAmount) || validBasePrice * guestSize,
+        appliedDiscounts: appliedDiscounts || [],
+        appliedSurcharges: appliedSurcharges || [],
+        paymentMethod,
+        bookAt: bookAt || new Date(),
+        province,
+        district,
+        ward,
+        addressDetail,
+      });
+
+      const savedBooking = await newBooking.save({ session });
+      
+      // Commit transaction
+      await session.commitTransaction();
       
       console.log("✅ Booking saved successfully:", savedBooking._id);
       console.log("✅ Saved booking guests:", savedBooking.guests);
@@ -365,12 +435,11 @@ export const createBooking = async (req, res) => {
         message: "Đặt tour thành công!",
         data: savedBooking
       });
-    } catch (saveError) {
-      console.error("❌ Lỗi lưu booking:", saveError);
       
-      // Revert the tour booking count if saving fails
-      tour.currentBookings -= guestSize;
-      await tour.save();
+    } catch (saveError) {
+      // Rollback transaction on error
+      await session.abortTransaction();
+      console.error("❌ Lỗi lưu booking:", saveError);
       
       // Check for specific validation errors
       if (saveError.name === 'ValidationError') {
@@ -381,19 +450,29 @@ export const createBooking = async (req, res) => {
           error: saveError.message,
           validationErrors: saveError.errors
         });
+      } else if (saveError.code === 11000) {
+        // Duplicate key error (unique constraint violation)
+        res.status(400).json({
+          success: false,
+          message: "Bạn đã có booking cho tour này rồi. Không thể đặt trùng.",
+          error: "Duplicate booking"
+        });
       } else {
         res.status(500).json({
           success: false,
-          message: "Lỗi khi lưu booking",
+          message: saveError.message || "Lỗi khi lưu booking",
           error: saveError.message
         });
       }
+    } finally {
+      session.endSession();
     }
+    
   } catch (error) {
     console.error("❌ Lỗi tạo booking:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi khi tạo booking",
+      message: error.message || "Lỗi khi tạo booking",
       error: error.message
     });
   }
@@ -429,7 +508,10 @@ export const getBooking = async (req, res) => {
 // ✅ Lấy tất cả booking (admin)
 export const getAllBookings = async (req, res) => {
   try {
-    const books = await Booking.find().sort({ createdAt: -1 });
+    const books = await Booking.find()
+      .populate('tourId', 'title city startDate endDate')
+      .populate('userId', 'username email')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -442,5 +524,153 @@ export const getAllBookings = async (req, res) => {
       message: "Không thể lấy danh sách booking",
       error: error.message
     });
+  }
+};
+
+// ✅ CRITICAL FIX: Get user's bookings (My Bookings page)
+export const getMyBookings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const bookings = await Booking.find({ userId })
+      .populate('tourId')
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Lấy bookings thành công',
+      data: bookings
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching my bookings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message
+    });
+  }
+};
+
+// ✅ CRITICAL FIX: Update booking status (Admin only)
+export const updateBookingStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['Pending', 'Confirmed', 'Failed', 'Cancelled'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status không hợp lệ. Chỉ chấp nhận: Pending, Confirmed, Failed, Cancelled'
+      });
+    }
+    
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking không tồn tại'
+      });
+    }
+    
+    // Business logic validation
+    if (booking.paymentStatus === 'Confirmed' && status === 'Pending') {
+      return res.status(400).json({
+        success: false,
+        message: 'Không thể đổi booking Confirmed về Pending'
+      });
+    }
+    
+    if (booking.paymentStatus === 'Cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Không thể cập nhật booking đã bị hủy'
+      });
+    }
+    
+    const oldStatus = booking.paymentStatus;
+    booking.paymentStatus = status;
+    await booking.save();
+    
+    // Update payment status if exists
+    const Payment = mongoose.model('Payment');
+    await Payment.updateOne(
+      { bookingId: id },
+      { status }
+    );
+    
+    console.log(`✅ Admin updated booking ${id} status: ${oldStatus} → ${status}`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật status thành công',
+      data: booking
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating booking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message
+    });
+  }
+};
+
+// ✅ CRITICAL FIX: Cancel booking with slots rollback (Admin or User)
+export const cancelBooking = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const booking = await Booking.findById(id).session(session);
+    if (!booking) {
+      throw new Error('Booking không tồn tại');
+    }
+    
+    if (booking.paymentStatus === 'Cancelled') {
+      throw new Error('Booking đã bị hủy rồi');
+    }
+    
+    // Update booking
+    booking.paymentStatus = 'Cancelled';
+    booking.cancellationReason = reason || 'Admin cancelled';
+    booking.cancelledAt = new Date();
+    booking.cancelledBy = req.user.id;
+    await booking.save({ session });
+    
+    // Update payment
+    const Payment = mongoose.model('Payment');
+    await Payment.updateOne(
+      { bookingId: id },
+      { status: 'Cancelled' },
+      { session }
+    );
+    
+    // Rollback tour slots
+    await rollbackTourSlots(booking.tourId, booking.guestSize, session);
+    
+    await session.commitTransaction();
+    
+    console.log(`✅ Booking ${id} cancelled successfully. Slots rolled back.`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Hủy booking thành công. Số chỗ đã được hoàn trả.',
+      data: booking
+    });
+    
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('❌ Error cancelling booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Lỗi khi hủy booking'
+    });
+  } finally {
+    session.endSession();
   }
 };
