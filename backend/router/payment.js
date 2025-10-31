@@ -65,7 +65,7 @@ router.post('/cash', async (req, res) => {
       appliedDiscounts,
       appliedSurcharges,
       paymentMethod: "Cash",
-      paymentStatus: "Confirmed", // Cash is auto-confirmed
+      paymentStatus: "Pending", // Cash is auto-confirmed
       province,
       district,
       ward,
@@ -81,7 +81,7 @@ router.post('/cash', async (req, res) => {
       orderId,
       amount: totalAmount,
       payType: "Cash",
-      status: "Confirmed",
+      status: "Pending",
       paidAt: new Date()
     });
 
