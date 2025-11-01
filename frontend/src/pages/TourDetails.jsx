@@ -416,7 +416,8 @@ const TourDetails = () => {
                       </Form>
                     </div>
                     
-                    {/* Danh sách đánh giá */}
+                    {/* Danh sách đánh giá cua nguoi` dung */} 
+                    
                     <div className="mt-4">
                       <h4 className="mb-3">Đánh giá từ khách hàng</h4>
                       
