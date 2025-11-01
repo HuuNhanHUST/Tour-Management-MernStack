@@ -106,6 +106,13 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
     },
+    // ✅ Mã booking để check-in và xác nhận cho khách hàng
+    confirmationNumber: {
+      type: String,
+      unique: true,
+      // ✅ FIXED: Remove required:true because pre-save hook generates it
+      index: true
+    },
 province: {
   code: { type: String, required: true },
   name: { type: String, required: true },
@@ -125,6 +132,19 @@ addressDetail: {
   },
   { timestamps: true }
 );
+
+// ✅ Pre-save hook để tự động tạo mã booking
+bookingSchema.pre('save', async function(next) {
+  if (!this.confirmationNumber) {
+    // Format: TOUR-YYYYMMDD-XXXXX
+    // VD: TOUR-20251031-A1B2C
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+    this.confirmationNumber = `TOUR-${dateStr}-${randomStr}`;
+  }
+  next();
+});
 
 // ✅ OPTION A: Virtual getter to access payment details
 bookingSchema.virtual('payment', {
@@ -166,6 +186,19 @@ bookingSchema.index(
     name: 'unique_user_tour_active_booking'
   }
 );
+
+// ✅ Pre-save hook để tự động tạo mã booking
+bookingSchema.pre('save', async function(next) {
+  if (!this.confirmationNumber) {
+    // Format: TOUR-YYYYMMDD-XXXXX
+    // VD: TOUR-20251031-A1B2C
+    const date = new Date();
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+    this.confirmationNumber = `TOUR-${dateStr}-${randomStr}`;
+  }
+  next();
+});
 
 export default mongoose.model("Booking", bookingSchema);
 

@@ -190,6 +190,10 @@ const EditTour = () => {
       for (const key in tour) {
         if (Array.isArray(tour[key])) {
           formData.append(key, JSON.stringify(tour[key]));
+        } else if (key === 'tourGuide') {
+          // ✅ FIX: Extract _id from tourGuide object if it's an object
+          const tourGuideId = tour[key]?._id || tour[key] || '';
+          formData.append(key, tourGuideId);
         } else {
           formData.append(key, tour[key]);
         }

@@ -160,6 +160,10 @@ const MyBookings = () => {
                       {/* Booking Details */}
                       <div className="booking-details mb-3">
                         <div className="detail-row">
+                          <i className="ri-ticket-line"></i>
+                          <span><strong>Mã booking:</strong> {booking.confirmationNumber || `#${booking._id.slice(-8).toUpperCase()}`}</span>
+                        </div>
+                        <div className="detail-row">
                           <i className="ri-user-line"></i>
                           <span><strong>Khách hàng:</strong> {booking.fullName}</span>
                         </div>

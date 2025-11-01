@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-export const sendSuccessEmail = async (to, orderId, amount, username) => {
+export const sendSuccessEmail = async (to, orderId, amount, username, confirmationNumber = null) => {
   const now = new Date();
   const timeString = now.toLocaleTimeString("vi-VN");
   const dateString = now.toLocaleDateString("vi-VN");
@@ -25,6 +25,12 @@ export const sendSuccessEmail = async (to, orderId, amount, username) => {
         <p style="color:purple">Chúng tôi đã nhận được thanh toán của bạn. Dưới đây là thông tin đơn hàng:</p>
 
         <table style="width:100%;margin-top:20px;">
+          ${confirmationNumber ? `
+          <tr>
+            <td><strong>Mã booking:</strong></td>
+            <td style="color:#007bff;font-size:18px;font-weight:bold;">${confirmationNumber}</td>
+          </tr>
+          ` : ''}
           <tr>
             <td><strong>Mã đơn hàng:</strong></td>
             <td>${orderId}</td>
