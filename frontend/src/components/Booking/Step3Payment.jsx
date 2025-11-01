@@ -39,6 +39,19 @@ const Step3Payment = ({ tour, bookingData, updateBookingData, prevStep }) => {
       return;
     }
 
+    // ✅ CRITICAL FIX: Validate address before payment
+    if (!province?.code || !district?.code || !ward?.code) {
+      NotificationManager.error("Vui lòng quay lại bước 2 để chọn địa chỉ đầy đủ");
+      prevStep();
+      return;
+    }
+
+    if (!addressDetail?.trim()) {
+      NotificationManager.error("Vui lòng quay lại bước 2 để nhập địa chỉ chi tiết");
+      prevStep();
+      return;
+    }
+
     // ✅ CRITICAL FIX: Prevent double-submit with cooldown
     const now = Date.now();
     const timeSinceLastSubmit = now - lastSubmitTime;

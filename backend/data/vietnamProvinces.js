@@ -401,6 +401,13 @@ export const provinces = [
     "phone_code": 277
   },
   {
+    "code": "88",
+    "name": "Tỉnh Sóc Trăng",
+    "division_type": "tỉnh",
+    "codename": "tinh_soc_trang",
+    "phone_code": 299
+  },
+  {
     "code": "89",
     "name": "Tỉnh An Giang",
     "division_type": "tỉnh",
@@ -489,6 +496,20 @@ const allDistricts = {
     { code: "281", name: "Huyện Ứng Hòa", division_type: "huyện", codename: "huyen_ung_hoa", province_code: "01" },
     { code: "282", name: "Huyện Mỹ Đức", division_type: "huyện", codename: "huyen_my_duc", province_code: "01" }
   ],
+  "88": [
+    // ✅ Placeholder: Sóc Trăng (code 88) - districts will be added later
+    { code: "881", name: "Thành phố Sóc Trăng", division_type: "thành phố", codename: "thanh_pho_soc_trang", province_code: "88" },
+    { code: "882", name: "Huyện Châu Thành", division_type: "huyện", codename: "huyen_chau_thanh", province_code: "88" },
+    { code: "883", name: "Huyện Kế Sách", division_type: "huyện", codename: "huyen_ke_sach", province_code: "88" },
+    { code: "884", name: "Huyện Mỹ Tú", division_type: "huyện", codename: "huyen_my_tu", province_code: "88" },
+    { code: "885", name: "Huyện Cù Lao Dung", division_type: "huyện", codename: "huyen_cu_lao_dung", province_code: "88" },
+    { code: "886", name: "Huyện Long Phú", division_type: "huyện", codename: "huyen_long_phu", province_code: "88" },
+    { code: "887", name: "Huyện Mỹ Xuyên", division_type: "huyện", codename: "huyen_my_xuyen", province_code: "88" },
+    { code: "888", name: "Thị xã Ngã Năm", division_type: "thị xã", codename: "thi_xa_nga_nam", province_code: "88" },
+    { code: "889", name: "Huyện Thạnh Trị", division_type: "huyện", codename: "huyen_thanh_tri", province_code: "88" },
+    { code: "890", name: "Thị xã Vĩnh Châu", division_type: "thị xã", codename: "thi_xa_vinh_chau", province_code: "88" },
+    { code: "891", name: "Huyện Trần Đề", division_type: "huyện", codename: "huyen_tran_de", province_code: "88" }
+  ],
   // Các tỉnh khác sẽ được thêm vào tương tự
 };
 
@@ -528,6 +549,61 @@ const allWards = {
     { code: "00028", name: "Phường Kim Mã", division_type: "phường", codename: "phuong_kim_ma", district_code: "001" },
     { code: "00031", name: "Phường Giảng Võ", division_type: "phường", codename: "phuong_giang_vo", district_code: "001" },
     { code: "00034", name: "Phường Thành Công", division_type: "phường", codename: "phuong_thanh_cong", district_code: "001" }
+  ],
+  "881": [ // Thành phố Sóc Trăng
+    { code: "88101", name: "Phường 1", division_type: "phường", codename: "phuong_1", district_code: "881" },
+    { code: "88102", name: "Phường 2", division_type: "phường", codename: "phuong_2", district_code: "881" },
+    { code: "88103", name: "Phường 3", division_type: "phường", codename: "phuong_3", district_code: "881" },
+    { code: "88104", name: "Phường 4", division_type: "phường", codename: "phuong_4", district_code: "881" },
+    { code: "88105", name: "Phường 5", division_type: "phường", codename: "phuong_5", district_code: "881" },
+    { code: "88106", name: "Phường 6", division_type: "phường", codename: "phuong_6", district_code: "881" },
+    { code: "88107", name: "Phường 7", division_type: "phường", codename: "phuong_7", district_code: "881" },
+    { code: "88108", name: "Phường 8", division_type: "phường", codename: "phuong_8", district_code: "881" },
+    { code: "88109", name: "Phường 9", division_type: "phường", codename: "phuong_9", district_code: "881" },
+    { code: "88110", name: "Phường 10", division_type: "phường", codename: "phuong_10", district_code: "881" }
+  ],
+  "882": [ // Huyện Châu Thành
+    { code: "88201", name: "Xã Hồ Đắc Kiện", division_type: "xã", codename: "xa_ho_dac_kien", district_code: "882" },
+    { code: "88202", name: "Xã Phú Tâm", division_type: "xã", codename: "xa_phu_tam", district_code: "882" },
+    { code: "88203", name: "Xã Thiện Mỹ", division_type: "xã", codename: "xa_thien_my", district_code: "882" }
+  ],
+  "883": [ // Huyện Kế Sách
+    { code: "88301", name: "Xã Kế Sách", division_type: "xã", codename: "xa_ke_sach", district_code: "883" },
+    { code: "88302", name: "Xã Xuân Hòa", division_type: "xã", codename: "xa_xuan_hoa", district_code: "883" }
+  ],
+  "884": [ // Huyện Mỹ Tú
+    { code: "88401", name: "Xã Mỹ Tú", division_type: "xã", codename: "xa_my_tu", district_code: "884" },
+    { code: "88402", name: "Xã Hưng Phú", division_type: "xã", codename: "xa_hung_phu", district_code: "884" }
+  ],
+  "885": [ // Huyện Cù Lao Dung
+    { code: "88501", name: "Xã Cù Lao Dung", division_type: "xã", codename: "xa_cu_lao_dung", district_code: "885" },
+    { code: "88502", name: "Xã An Thạnh 1", division_type: "xã", codename: "xa_an_thanh_1", district_code: "885" }
+  ],
+  "886": [ // Huyện Long Phú
+    { code: "88601", name: "Xã Long Phú", division_type: "xã", codename: "xa_long_phu", district_code: "886" },
+    { code: "88602", name: "Xã Song Phụng", division_type: "xã", codename: "xa_song_phung", district_code: "886" }
+  ],
+  "887": [ // Huyện Mỹ Xuyên
+    { code: "88701", name: "Xã Mỹ Xuyên", division_type: "xã", codename: "xa_my_xuyen", district_code: "887" },
+    { code: "88702", name: "Xã Đại Tâm", division_type: "xã", codename: "xa_dai_tam", district_code: "887" }
+  ],
+  "888": [ // Thị xã Ngã Năm
+    { code: "88801", name: "Phường 1", division_type: "phường", codename: "phuong_1", district_code: "888" },
+    { code: "88802", name: "Phường 2", division_type: "phường", codename: "phuong_2", district_code: "888" },
+    { code: "88803", name: "Xã Vĩnh Quới", division_type: "xã", codename: "xa_vinh_quoi", district_code: "888" }
+  ],
+  "889": [ // Huyện Thạnh Trị
+    { code: "88901", name: "Xã Thạnh Trị", division_type: "xã", codename: "xa_thanh_tri", district_code: "889" },
+    { code: "88902", name: "Xã Phú Lộc", division_type: "xã", codename: "xa_phu_loc", district_code: "889" }
+  ],
+  "890": [ // Thị xã Vĩnh Châu
+    { code: "89001", name: "Phường 1", division_type: "phường", codename: "phuong_1", district_code: "890" },
+    { code: "89002", name: "Phường 2", division_type: "phường", codename: "phuong_2", district_code: "890" },
+    { code: "89003", name: "Xã Lại Sơn", division_type: "xã", codename: "xa_lai_son", district_code: "890" }
+  ],
+  "891": [ // Huyện Trần Đề
+    { code: "89101", name: "Xã Trần Đề", division_type: "xã", codename: "xa_tran_de", district_code: "891" },
+    { code: "89102", name: "Xã Liêu Tú", division_type: "xã", codename: "xa_lieu_tu", district_code: "891" }
   ],
   // Các quận/huyện khác sẽ được thêm vào tương tự
 };

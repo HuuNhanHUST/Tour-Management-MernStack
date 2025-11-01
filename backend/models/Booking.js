@@ -110,7 +110,7 @@ const bookingSchema = new mongoose.Schema(
     confirmationNumber: {
       type: String,
       unique: true,
-      required: true,
+      // ✅ FIXED: Remove required:true because pre-save hook generates it
       index: true
     },
 province: {

@@ -107,7 +107,9 @@ const BookingDetails = () => {
                   <i className="ri-file-list-line"></i> Chi tiết booking
                 </h2>
                 <p className="text-muted mb-0">
-                  Mã booking: <strong>#{booking._id.slice(-8).toUpperCase()}</strong>
+                  Mã booking: <strong className="text-primary">
+                    {booking.confirmationNumber || `#${booking._id.slice(-8).toUpperCase()}`}
+                  </strong>
                 </p>
               </div>
               <div className="mt-3 mt-md-0">
